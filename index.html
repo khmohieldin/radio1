@@ -1,0 +1,3011 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>راديو خالد</title>
+    <!-- تضمين مكتبة Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تضمين مكتبة أيقونات Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #333; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #555; }
+        
+        .custom-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 14px;
+          width: 14px;
+          border-radius: 50%;
+          background: #ec4899;
+          cursor: pointer;
+          box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+          transition: transform 0.1s;
+        }
+        .custom-range::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
+        }
+
+        /* حركات مخصصة */
+        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 10s linear infinite; }
+        
+        /* حركة الشريط المتحرك (من الشمال لليمين) */
+        @keyframes scroll-ltr {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100vw); }
+        }
+        .animate-scroll-ltr {
+            display: inline-block;
+            white-space: nowrap;
+            animation: scroll-ltr 30s linear infinite;
+            will-change: transform;
+        }
+        
+        /* إيقاف الشريط عند مرور الماوس لسهولة الضغط على الروابط */
+        .animate-scroll-ltr:hover {
+            animation-play-state: paused;
+        }
+
+        /* تنسيقات المسك والإفلات */
+        .drag-over { border-color: #06b6d4 !important; background-color: rgba(6, 182, 212, 0.1) !important; }
+        .dragging { opacity: 0.5; background-color: #222; }
+    </style>
+</head>
+<body class="min-h-screen bg-[#111111] text-gray-100 font-sans selection:bg-pink-500/30 flex flex-col">
+
+    <!-- نافذة منبثقة (Modal) عامة -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity p-4">
+        <div id="modal-content" class="bg-[#1a1a1a] border border-[#333] p-6 rounded-2xl w-full max-w-md shadow-2xl transform scale-100 transition-transform max-h-[90vh] flex flex-col">
+            <!-- سيتم حقن محتوى النافذة هنا برمجياً -->
+        </div>
+    </div>
+
+    <!-- حاوية الإشعارات -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- مشغل الصوت المخفي -->
+    <audio id="audio-player" crossorigin="anonymous"></audio>
+
+    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 flex-grow w-full">
+        
+        <!-- الترويسة -->
+        <header class="flex items-center justify-between pb-4 border-b border-gray-800">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-400 to-pink-500 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.3)]">
+                    <i data-lucide="radio" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-white to-pink-400">
+                            راديو خالد
+                        </h1>
+                        <!-- شارة غرفة التحكم -->
+                        <span id="admin-badge" class="hidden bg-pink-500/20 text-pink-400 text-xs px-2 py-0.5 rounded border border-pink-500/30 flex items-center gap-1 cursor-pointer hover:bg-pink-500/30 transition-colors" onclick="lockAdmin()" title="إغلاق غرفة التحكم">
+                            <i data-lucide="unlock" class="w-3 h-3"></i>
+                            غرفة التحكم
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-1 flex-wrap">
+                        <p class="text-sm text-gray-400">رحلة الى الزمن الجميل</p>
+                        <!-- عداد الزوار المباشر -->
+                        <div class="flex items-center gap-1.5 text-xs text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded border border-cyan-500/20" title="عدد الزوار الفريدين (مباشر)">
+                            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                            <span id="visitor-count-display" class="font-bold font-mono">...</span> زائر
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- زر إذاعة القرآن الكريم -->
+            <button onclick="playQuranRadio()" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl transition-all font-bold shadow-lg shadow-emerald-500/20 border border-emerald-400/30 shrink-0">
+                <i data-lucide="radio" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                <span class="hidden sm:inline text-sm">إذاعة القرآن الكريم</span>
+                <span class="sm:hidden text-xs">القرآن الكريم</span>
+            </button>
+        </header>
+
+        <!-- شريط الإحصائيات المتحرك -->
+        <div id="ticker-container" class="w-full bg-[#151515] border border-[#333] rounded-xl overflow-hidden py-2.5 px-4 relative flex items-center shadow-md" dir="ltr">
+            <div class="w-full overflow-hidden whitespace-nowrap">
+                <div id="ticker-text" class="animate-scroll-ltr text-cyan-400 font-medium text-sm sm:text-base" dir="rtl" title="يمكنك إيقاف الشريط بتمرير الماوس عليه والضغط على أسماء المقاطع لتشغيلها">
+                    <!-- سيتم حقن الإحصائيات هنا -->
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- القسم الأيمن: المشغل والتحكم -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                    
+                    <!-- تأثير الإضاءة الخلفية للتشغيل -->
+                    <div id="playing-glow" class="hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 blur-[50px] rounded-full pointer-events-none"></div>
+                        <div class="absolute bottom-0 left-0 w-32 h-32 bg-cyan-500/20 blur-[50px] rounded-full pointer-events-none"></div>
+                    </div>
+                    
+                    <div class="relative z-10 flex flex-col items-center text-center space-y-6">
+                        
+                        <!-- تأثير الاستريو (Visualizer) -->
+                        <canvas id="visualizer" class="w-full h-24 mb-4 transition-opacity duration-500 opacity-0" width="800" height="96" title="محلل الطيف الصوتي"></canvas>
+
+                        <!-- الغلاف -->
+                        <div id="cover-container" class="w-40 h-40 rounded-full border-4 border-gray-800 flex items-center justify-center bg-black transition-all duration-500 overflow-hidden">
+                            <i id="default-icon" data-lucide="music" class="w-12 h-12 text-gray-600"></i>
+                            <img id="track-cover" alt="Cover" class="hidden w-full h-full object-cover opacity-60" onerror="this.onerror=null; this.removeAttribute('src'); this.classList.add('hidden'); document.getElementById('default-icon').classList.remove('hidden');" />
+                        </div>
+
+                        <!-- معلومات المقطع -->
+                        <div class="w-full">
+                            <span id="playing-group-badge" class="hidden inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-pink-500/10 text-pink-400 border border-pink-500/20"></span>
+                            <h2 id="track-title" class="text-lg font-bold text-white px-2 max-h-24 overflow-y-auto custom-scrollbar" title="لا يوجد مقطع">
+                                محطة الراديو جاهزة
+                            </h2>
+                            <div class="flex items-center justify-center gap-2 mt-2 text-sm text-gray-400">
+                                <i data-lucide="user" class="w-4 h-4 text-cyan-400"></i>
+                                <span id="track-author">صاحب المقطع</span>
+                            </div>
+                        </div>
+
+                        <!-- شريط التقدم (المدة) -->
+                        <div class="w-full px-4" dir="ltr">
+                            <div class="flex justify-between text-xs text-gray-500 mb-2 font-mono items-center">
+                                <div class="flex items-center gap-2">
+                                    <span id="current-time-txt">0:00</span>
+                                    <button id="btn-restart" class="text-gray-500 hover:text-cyan-400 transition-colors hidden" title="إعادة المقطع من البداية">
+                                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                                <span id="duration-txt">0:00</span>
+                            </div>
+                            <div id="progress-container" class="w-full h-4 bg-gray-800 rounded-full overflow-hidden cursor-pointer relative group flex items-center">
+                                <div id="progress-bar" class="h-2.5 bg-gradient-to-r from-cyan-400 to-pink-500 transition-none ease-linear relative w-full rounded-full" style="width: 0%">
+                                    <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity translate-x-1/2 cursor-grab active:cursor-grabbing pointer-events-none"></div>
+                                </div>
+                            </div>
+
+                            <!-- شريط التحكم بمستوى الصوت (المضخم) -->
+                            <div class="flex items-center gap-3 mt-4 bg-[#0a0a0a] p-2.5 rounded-xl border border-[#333]">
+                                <button id="btn-mute" class="text-gray-400 hover:text-cyan-400 transition-colors">
+                                    <i id="volume-icon" data-lucide="volume-1" class="w-5 h-5"></i>
+                                </button>
+                                <input
+                                    type="range"
+                                    id="volume-slider"
+                                    min="0"
+                                    max="3"
+                                    step="0.05"
+                                    value="1"
+                                    class="flex-1 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer custom-range"
+                                    title="مستوى الصوت (يمكنك الرفع حتى 300%)"
+                                />
+                                <span id="volume-text" class="text-xs font-mono font-bold w-12 text-center py-1 rounded-md text-cyan-400 bg-cyan-500/10">
+                                    100%
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- أزرار التحكم -->
+                        <div class="flex items-center justify-center gap-6 w-full pt-2">
+                            <button id="btn-loop" class="p-3 rounded-full transition-colors text-gray-500 hover:text-white hover:bg-[#2a2a2a]" title="تكرار المقطع">
+                                <i id="loop-icon" data-lucide="repeat" class="w-5 h-5"></i>
+                            </button>
+
+                            <button id="btn-next" class="p-3 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-colors" disabled>
+                                <i data-lucide="skip-forward" class="w-7 h-7"></i>
+                            </button>
+
+                            <button id="btn-play-pause" class="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:hover:scale-100 transition-colors" title="تشغيل / إيقاف">
+                                <svg id="svg-play" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+                            </button>
+
+                            <button id="btn-prev" class="p-3 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-colors" disabled>
+                                <i data-lucide="skip-back" class="w-7 h-7"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- زر التحميل -->
+                        <div id="download-container" class="pt-4 border-t border-gray-800 w-full hidden">
+                            <button id="btn-download" class="flex items-center justify-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors py-2 mx-auto">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>تحميل مسار الصوت</span>
+                            </button>
+                        </div>
+
+                        <!-- تفاصيل المقطع -->
+                        <div id="track-details-container" class="w-full pt-4 border-t border-gray-800 hidden text-right">
+                            <h3 class="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                                معلومات المقطع
+                            </h3>
+                            <div id="track-details-text" class="text-sm text-gray-300 leading-relaxed bg-gray-900/50 p-4 rounded-xl border border-gray-800 text-right">
+                                <!-- سيتم حقن التفاصيل هنا برمجياً -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- القسم الأيسر: القائمة والإضافة -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- نموذج الإضافة وأدوات المدير -->
+                <div id="admin-controls-wrapper" class="bg-[#1a1a1a] border border-[#333] rounded-2xl p-4 hidden">
+                    <label class="block text-sm font-medium text-cyan-400 mb-3 flex items-center gap-2">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                        غرفة التحكم - الإعدادات والإضافة
+                    </label>
+                    <form id="link-form" class="flex gap-2 mb-4">
+                        <div class="relative flex-1">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i data-lucide="link" class="h-5 w-5 text-gray-500"></i>
+                            </div>
+                            <input
+                                type="url"
+                                id="link-input"
+                                dir="ltr"
+                                placeholder="رابط تيك توك، أرشيف، يوتيوب، ساوند كلاود..."
+                                class="block w-full pl-3 pr-10 py-3 bg-[#0a0a0a] border border-[#333] rounded-xl text-left text-gray-200 focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all disabled:opacity-50 outline-none"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            id="btn-submit"
+                            class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-pink-600 hover:from-cyan-500 hover:to-pink-500 disabled:from-[#333] disabled:to-[#333] disabled:text-gray-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all min-w-[120px]"
+                            disabled
+                        >
+                            <i id="submit-icon" data-lucide="plus" class="w-5 h-5"></i>
+                            <span id="submit-text" class="hidden sm:inline">إضافة</span>
+                        </button>
+                    </form>
+                    <p id="error-msg" class="text-red-400 text-sm mb-4 hidden"></p>
+
+                    <!-- أزرار التحكم بالصور ومن نحن ورسائل الزوار -->
+                    <div class="flex flex-col gap-3 border-t border-[#333] pt-4">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button onclick="changeAdminPassword()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-yellow-400 border border-yellow-500/30 rounded-xl hover:bg-yellow-500/10 transition-colors flex items-center gap-2" title="تغيير كلمة مرور الدخول للوحة">
+                                <i data-lucide="key" class="w-4 h-4"></i>
+                                تغيير كلمة المرور
+                            </button>
+                            <button onclick="setDefaultCoverUrl()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-purple-400 border border-purple-500/30 rounded-xl hover:bg-purple-500/10 transition-colors flex items-center gap-2">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                                الشعار الافتراضي
+                            </button>
+                            <button onclick="removeDefaultCover()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/10 transition-colors flex items-center gap-2" id="btn-remove-default-cover">
+                                <i data-lucide="trash" class="w-4 h-4"></i>
+                                حذف الشعار
+                            </button>
+                            <button onclick="editAboutUs()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-green-400 border border-green-500/30 rounded-xl hover:bg-green-500/10 transition-colors flex items-center gap-2">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                تعديل (من نحن)
+                            </button>
+                            <button onclick="openMessagesModal()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-blue-400 border border-blue-500/30 rounded-xl hover:bg-blue-500/10 transition-colors flex items-center gap-2" title="الشكاوى والاقتراحات">
+                                <i data-lucide="inbox" class="w-4 h-4"></i>
+                                رسائل الزوار
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 w-full mt-2">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-purple-400 flex-shrink-0"></i>
+                            <input type="password" id="gemini-api-key" placeholder="مفتاح الذكاء الاصطناعي (Gemini API Key) - مطلوب إذا كنت تعمل خارج مساحة العمل" class="flex-1 bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-purple-500 outline-none transition-all" onchange="localStorage.setItem('geminiApiKey', this.value)" title="أدخل مفتاح Gemini API الخاص بك هنا ليعمل الذكاء الاصطناعي على هاتفك أو استضافتك">
+                        </div>
+                    </div>
+
+                    <!-- إعداد سرعة الشريط المتحرك وتخطي المقدمة -->
+                    <div class="flex flex-col gap-3 border-t border-[#333] pt-4 mt-2">
+                        <label class="block text-sm font-medium text-cyan-400 flex items-center gap-2">
+                            <i data-lucide="gauge" class="w-4 h-4"></i>
+                            سرعة الشريط المتحرك
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-gray-500 font-bold">سريع</span>
+                            <input type="range" id="ticker-speed-slider" min="10" max="60" value="30" dir="ltr" class="flex-1 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer custom-range" oninput="changeTickerSpeed(this.value)">
+                            <span class="text-xs text-gray-500 font-bold">بطيء</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t border-[#333] pt-4 mt-2">
+                        <label class="block text-sm font-medium text-cyan-400 flex items-center gap-2">
+                            <i data-lucide="fast-forward" class="w-4 h-4"></i>
+                            تخطي مقدمة المقطع (ثواني)
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="skip-seconds-input" min="0" max="300" value="20" class="w-20 bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2 text-sm text-center text-gray-200 focus:ring-2 focus:ring-cyan-500 outline-none transition-all" oninput="changeSkipSeconds(this.value)">
+                            <span class="text-xs text-gray-500 font-medium">اختر 0 لإلغاء التخطي التلقائي</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#1a1a1a] border border-[#333] rounded-2xl overflow-hidden flex flex-col h-[450px] lg:h-full lg:max-h-[650px]">
+                    
+                    <div class="p-4 border-b border-[#333] flex items-center justify-between bg-[#111] z-10 relative">
+                        <h3 class="font-semibold text-gray-200 flex items-center gap-2 flex-wrap">
+                            مقاطع المجموعة
+                            <!-- منطقة حالة السحابة -->
+                            <div id="cloud-status-wrapper" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#222] border border-[#333]">
+                                <i data-lucide="cloud-off" class="w-4 h-4 text-gray-500"></i>
+                                <span class="text-[11px] font-mono text-gray-500">جاري الاتصال...</span>
+                            </div>
+                        </h3>
+                        <span id="playlist-count" class="text-xs font-medium px-2 py-1 bg-[#222] text-cyan-400 rounded-md border border-[#333]">
+                            0 مقاطع
+                        </span>
+                    </div>
+
+                    <!-- شريط الأقسام (القائمة المنسدلة الذكية) -->
+                    <div id="groups-container" class="flex items-center gap-3 p-4 bg-[#151515] border-b border-[#333] relative z-20">
+                        <!-- تُعرض القائمة المنسدلة هنا برمجياً -->
+                    </div>
+
+                    <!-- شريط البحث السريع المضاف حديثاً -->
+                    <div class="px-4 py-3 bg-[#111] border-b border-[#333]">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i data-lucide="search" class="w-4 h-4 text-gray-500"></i>
+                            </div>
+                            <input
+                                type="text"
+                                id="search-input"
+                                placeholder="ابحث عن مقطع..."
+                                class="block w-full pl-10 pr-10 py-2.5 bg-[#0a0a0a] border border-[#333] rounded-xl text-sm text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+                                oninput="handleSearch(this.value)"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div id="playlist-container" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar relative z-10">
+                        <!-- القائمة تُعرض هنا بناءً على المجموعة المحددة والبحث -->
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- تذييل الصفحة (Footer) المحدث -->
+        <footer class="mt-12 pt-6 border-t border-gray-800 flex flex-col gap-8 pb-8">
+            
+            <!-- أزرار الإجراءات الإضافية -->
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                 <button onclick="installApp()" class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl shadow-lg shadow-pink-500/20 transition-all font-bold">
+                     <img src="https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png" class="w-6 h-6 rounded-md" alt="تطبيق راديو خالد">
+                     تنزيل التطبيق
+                 </button>
+                 <button onclick="addToFavorites()" class="flex items-center gap-2 px-5 py-2.5 bg-[#222] hover:bg-[#333] border border-[#444] text-yellow-400 rounded-xl transition-all font-medium shadow-md">
+                     <i data-lucide="star" class="w-4 h-4"></i>
+                     المفضلة / الرئيسية
+                 </button>
+                 <button onclick="openContactModal()" class="flex items-center gap-2 px-5 py-2.5 bg-[#222] hover:bg-[#333] border border-[#444] text-cyan-400 rounded-xl transition-all font-medium shadow-md">
+                     <i data-lucide="mail" class="w-4 h-4"></i>
+                     تواصل معنا
+                 </button>
+                 <button onclick="showAboutUs()" class="flex items-center gap-2 px-5 py-2.5 bg-[#222] hover:bg-[#333] border border-[#444] text-purple-400 rounded-xl transition-all font-medium shadow-md">
+                     <i data-lucide="info" class="w-4 h-4"></i>
+                     من نحن
+                 </button>
+            </div>
+
+            <!-- حقوق التطوير والروابط الاجتماعية -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm px-4">
+                <p class="text-gray-400 font-medium">
+                    تطوير <span class="text-cyan-400 font-bold">خالد محي الدين</span>
+                </p>
+                <div class="flex items-center gap-6">
+                    <a href="tel:00201018282460" class="flex items-center gap-2 text-gray-500 hover:text-cyan-400 transition-colors" title="اتصال">
+                        <i data-lucide="phone" class="w-4 h-4"></i>
+                        <span dir="ltr">00201018282460</span>
+                    </a>
+                    <a href="https://wa.me/201018282460" target="_blank" class="flex items-center gap-2 text-gray-500 hover:text-green-500 transition-colors" title="واتساب">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        <span>واتساب</span>
+                    </a>
+                    <a href="https://www.facebook.com/khaledmohyalden" target="_blank" class="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors" title="فيسبوك">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" />
+                        </svg>
+                        <span>فيسبوك</span>
+                    </a>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, collection, addDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyBnPCi3d1U_2IFd7uJfX2OJ50e6ZGpyXd0",
+            authDomain: "caopy-6a424.firebaseapp.com",
+            projectId: "caopy-6a424",
+            storageBucket: "caopy-6a424.firebasestorage.app",
+            messagingSenderId: "633633314629",
+            appId: "1:633633314629:web:a134ea89facc28d2ced02c",
+            measurementId: "G-1JHK9RF07B"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tiktok-radio-app';
+
+        lucide.createIcons();
+
+        const SVG_PLAY = `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>`;
+        const SVG_PAUSE = `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="4" height="16" rx="1"></rect><rect x="6" y="4" width="4" height="16" rx="1"></rect></svg>`;
+
+        // وظائف الإشعارات
+        window.showToast = (message, type = 'info') => {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) return;
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500/90' : type === 'success' ? 'bg-emerald-500/90' : 'bg-cyan-500/90';
+            const icon = type === 'error' ? 'alert-triangle' : type === 'success' ? 'check-circle' : 'info';
+            
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white ${bgColor} animate-[slideIn_0.3s_ease-out]`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span class="font-medium text-sm">${message}</span>`;
+            
+            toastContainer.appendChild(toast);
+            lucide.createIcons({ root: toast });
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(100%)';
+                toast.style.transition = 'all 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // متغيرات الحالة العامة
+        let groups = [{ id: 'main', name: 'الرئيسية', tracks: [] }];
+        let defaultCover = ''; 
+        let aboutUsText = ''; 
+        let adminPassword = '2112'; 
+        let autoSkipSeconds = 20; // متغير التحكم في تخطي الثواني (الافتراضي 20)
+        let globalVisits = 0;
+        let totalTracksPlayed = 0; 
+        let globalTrackPlays = {}; 
+        let tickerSpeed = parseInt(localStorage.getItem('radio_ticker_speed') || '30');
+
+        let viewingGroupId = 'main'; 
+        let playingGroupId = null;   
+
+        let currentIndex = -1; 
+        let isPlaying = false;
+        let isLooping = false;
+        let isLoading = false;
+        let user = null;
+        let volume = 1;
+        let pendingRestoreTime = false;
+        let isDraggingProgress = false;
+        let draggedIndex = -1; 
+        let lastPlayedTrackId = null; 
+        let audioLoadTimeout; 
+        
+        let isDropdownOpen = false; 
+        let isAdmin = localStorage.getItem('radioAdmin') === 'true'; 
+
+        let searchQuery = '';
+
+        const audio = document.getElementById('audio-player');
+        
+        window.safeChangeTrack = function(newSrc) {
+            if(audio) {
+                audio.pause();
+                audio.removeAttribute('src'); 
+                audio.load(); 
+                audio.setAttribute('crossorigin', 'anonymous'); 
+                audio.src = newSrc;
+                audio.load();
+            }
+        };
+
+        window.playQuranRadio = () => {
+            playingGroupId = null;
+            currentIndex = -2; 
+            localStorage.setItem('lastTrackIndex', -2);
+            localStorage.removeItem('lastPlayingGroupId');
+
+            window.safeChangeTrack('https://stream.radiojar.com/8s5u5tpdtwzuv'); 
+            pendingRestoreTime = false;
+
+            window.initAudioBooster();
+            
+            if(audio) {
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.error("تعذر تشغيل الإذاعة تلقائياً:", e);
+                    });
+                }
+            }
+            window.updatePlayerUI();
+        };
+
+        // نظام التجديد التلقائي للروابط المنتهية (Self-Healing System)
+        window.autoRefreshTrack = async function(track, group, index) {
+            window.showToast('الرابط انتهت صلاحيته... جاري تجديد المقطع تلقائياً 🔄', 'info');
+            const titleEl = document.getElementById('track-title');
+            if (titleEl) titleEl.innerText = '🔄 جاري التجديد التلقائي...';
+            
+            const url = track.url;
+            const isTikTok = url.includes('tiktok.com');
+            const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+            const isSoundCloud = url.includes('soundcloud.com');
+
+            let newAudioUrl = '';
+
+            try {
+                if (isTikTok) {
+                    const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+                    const json = await res.json();
+                    if (json.code === 0 && json.data) {
+                        newAudioUrl = json.data.play;
+                    }
+                } else if (isYouTube || isSoundCloud) {
+                    const fetchers = [];
+                    const targetUrl = isSoundCloud ? url.split('?')[0] : url;
+
+                    const cobaltInstances = [
+                        'https://co.wuk.sh',
+                        'https://api.zmrz.nl',
+                        'https://cobalt.csthub.cc',
+                        'https://cobalt-api.kwiatekit.com',
+                        'https://cobalt.seasi.dev',
+                        'https://cobalt.j02.xyz'
+                    ];
+
+                    const cobaltBody = JSON.stringify({ 
+                        url: targetUrl, 
+                        isAudioOnly: true,
+                        downloadMode: 'audio',
+                        aFormat: 'mp3'
+                    });
+                    const cobaltHeaders = { 
+                        'Accept': 'application/json', 
+                        'Content-Type': 'application/json'
+                    };
+
+                    cobaltInstances.forEach(instance => {
+                        fetchers.push(async () => {
+                            const r = await fetch(`${instance}/api/json`, { method: 'POST', headers: cobaltHeaders, body: cobaltBody });
+                            const d = await r.json();
+                            return d?.url;
+                        });
+                    });
+                    
+                    if (isYouTube) {
+                        fetchers.push(
+                            async () => { const r = await fetch(`https://api.vreden.my.id/api/ytmp3?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result?.download?.url || d?.result?.url; },
+                            async () => { const r = await fetch(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.data?.dl || d?.data?.url; },
+                            async () => { const r = await fetch(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.url || d?.data?.url; }
+                        );
+                    } else if (isSoundCloud) {
+                        const scClientIds = ['YUKXoArHAw1iwbA7iA6wXyIXXNfCrb6g', 'tQUb6PZc5t7tU2bX1qT297k9r4sXp2R3', 'a3e059563d7fd3372b49b37f00a00bcf'];
+                        scClientIds.forEach(cid => {
+                            fetchers.unshift(async () => { 
+                                const resolveUrl = `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(targetUrl)}&client_id=${cid}`;
+                                const res = await fetch(resolveUrl);
+                                if (!res.ok) throw new Error('SC Resolve Failed');
+                                const data = await res.json();
+                                const progressive = data.media?.transcodings?.find(t => t.format.protocol === 'progressive') || data.media?.transcodings?.[0];
+                                if (progressive?.url) {
+                                    const streamRes = await fetch(`${progressive.url}?client_id=${cid}`);
+                                    const streamData = await streamRes.json();
+                                    return streamData?.url;
+                                }
+                                return null;
+                            });
+                        });
+                        fetchers.push(
+                            async () => { const r = await fetch(`https://api.vreden.my.id/api/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result?.download || d?.result?.url; },
+                            async () => { const r = await fetch(`https://api.agatz.xyz/api/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.data?.url || d?.data?.download; },
+                            async () => { const r = await fetch(`https://aemt.me/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result || d?.url; },
+                            async () => { const r = await fetch(`https://api.nyxs.pw/dl/sc?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result?.url || d?.url; },
+                            async () => { const r = await fetch(`https://api.siputzx.my.id/api/d/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.data?.dl || d?.data?.url; }
+                        );
+                    }
+
+                    for (let fn of fetchers) {
+                        try {
+                            const resUrl = await fn();
+                            if (resUrl && typeof resUrl === 'string' && (resUrl.startsWith('http://') || resUrl.startsWith('https://'))) {
+                                newAudioUrl = resUrl;
+                                break; 
+                            }
+                        } catch (e) {}
+                    }
+                    
+                    if (!newAudioUrl && isSoundCloud) {
+                        try {
+                            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api-v2.soundcloud.com/resolve?url=' + encodeURIComponent(targetUrl) + '&client_id=YUKXoArHAw1iwbA7iA6wXyIXXNfCrb6g')}`;
+                            const pRes = await fetch(proxyUrl);
+                            const pData = await pRes.json();
+                            const pProg = pData.media?.transcodings?.find(t => t.format.protocol === 'progressive') || pData.media?.transcodings?.[0];
+                            if (pProg?.url) {
+                                const streamRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(pProg.url + '?client_id=YUKXoArHAw1iwbA7iA6wXyIXXNfCrb6g')}`);
+                                const streamData = await streamRes.json();
+                                if (streamData?.url) newAudioUrl = streamData.url;
+                            }
+                        } catch (err) {}
+                    }
+                }
+            } catch(e) {}
+
+            if (newAudioUrl) {
+                track.audioUrl = newAudioUrl;
+                track.isRefreshing = false; 
+                if(isAdmin && user) window.saveToDB(); 
+                
+                if (playingGroupId === group.id && currentIndex === index) {
+                    window.showToast('تم التجديد بنجاح! جاري التشغيل ✅', 'success');
+                    if (titleEl) titleEl.innerText = track.title;
+                    window.safeChangeTrack(newAudioUrl);
+                    window.initAudioBooster();
+                    if(audio) audio.play();
+                }
+            } else {
+                track.isRefreshing = false;
+                window.showToast('فشل التجديد التلقائي، يرجى إعادة إضافة المقطع', 'error');
+                if (titleEl) titleEl.innerText = '❌ خطأ في التشغيل';
+            }
+        };
+
+        if(audio) {
+            audio.addEventListener('error', () => {
+                if (audio.error && (audio.error.code === 4 || audio.error.code === 3)) { 
+                    
+                    // محاولة التجديد التلقائي للروابط المنتهية الصلاحية
+                    const currentGroup = window.getPlayingGroup();
+                    if (currentGroup && currentIndex >= 0) {
+                        const track = currentGroup.tracks[currentIndex];
+                        if (track && track.url && (track.url.includes('soundcloud.com') || track.url.includes('youtube.com') || track.url.includes('youtu.be') || track.url.includes('tiktok.com'))) {
+                            if (!track.isRefreshing) {
+                                track.isRefreshing = true;
+                                console.warn("الرابط منتهي، جاري التجديد التلقائي...");
+                                window.autoRefreshTrack(track, currentGroup, currentIndex);
+                                return; 
+                            }
+                        }
+                    }
+
+                    if (audio.getAttribute('crossorigin')) {
+                        console.warn("جاري محاولة التشغيل بوضع الأمان لتجاوز حظر الاستريو...");
+                        audio.removeAttribute('crossorigin');
+                        const currentSrc = audio.src;
+                        audio.removeAttribute('src');
+                        audio.load();
+                        audio.src = currentSrc; 
+                        audio.load();
+                        audio.play().catch(e => {
+                            console.error("تعذر التشغيل نهائياً", e);
+                            window.showToast('حدثت مشكلة في تشغيل المقطع، يرجى تحديث الصفحة أو تجربة مقطع آخر', 'error');
+                            const titleEl = document.getElementById('track-title');
+                            if (titleEl) titleEl.innerText = '❌ خطأ في التشغيل';
+                        });
+                    } else {
+                        window.showToast('حدثت مشكلة في تشغيل المقطع، يرجى تحديث الصفحة أو تجربة مقطع آخر', 'error');
+                        const titleEl = document.getElementById('track-title');
+                        if (titleEl) titleEl.innerText = '❌ خطأ في التشغيل';
+                    }
+                }
+            });
+
+            audio.addEventListener('waiting', () => {
+                if (currentIndex !== -2) {
+                    const titleEl = document.getElementById('track-title');
+                    if (titleEl) titleEl.innerText = '⏳ جاري تحضير المقطع للتشغيل...';
+                    const authorEl = document.getElementById('track-author');
+                    if (authorEl) authorEl.innerText = 'يرجى الانتظار...';
+                }
+            });
+
+            audio.addEventListener('playing', () => {
+                clearTimeout(audioLoadTimeout); 
+                // إرجاع عنوان المقطع الأصلي بمجرد بدء التشغيل
+                window.updatePlayerUI();
+            });
+        }
+
+        const linkInput = document.getElementById('link-input');
+        const btnSubmit = document.getElementById('btn-submit');
+        const errorMsg = document.getElementById('error-msg');
+        const linkForm = document.getElementById('link-form');
+        
+        const playlistContainer = document.getElementById('playlist-container');
+        const playlistCount = document.getElementById('playlist-count');
+        const groupsContainer = document.getElementById('groups-container');
+        
+        const coverContainer = document.getElementById('cover-container');
+        const trackCover = document.getElementById('track-cover');
+        const defaultIcon = document.getElementById('default-icon');
+        const trackTitle = document.getElementById('track-title');
+        const trackAuthor = document.getElementById('track-author');
+        const playingGlow = document.getElementById('playing-glow');
+        const playingGroupBadge = document.getElementById('playing-group-badge');
+        
+        const btnPlayPause = document.getElementById('btn-play-pause');
+        const btnNext = document.getElementById('btn-next');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnLoop = document.getElementById('btn-loop');
+        const btnRestart = document.getElementById('btn-restart');
+        
+        const downloadContainer = document.getElementById('download-container');
+        const downloadBtnEl = document.getElementById('btn-download');
+        
+        const trackDetailsContainer = document.getElementById('track-details-container');
+        const trackDetailsText = document.getElementById('track-details-text');
+        
+        const currentTimeTxt = document.getElementById('current-time-txt');
+        const durationTxt = document.getElementById('duration-txt');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeText = document.getElementById('volume-text');
+        const volumeIcon = document.getElementById('volume-icon');
+        const btnMute = document.getElementById('btn-mute');
+        
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContent = document.getElementById('modal-content');
+
+        const visualizerCanvas = document.getElementById('visualizer');
+        const canvasCtx = visualizerCanvas ? visualizerCanvas.getContext('2d') : null;
+        let animationId;
+
+        // ==================
+        // إعداد Media Session API (لإبقاء المشغل حياً في الخلفية وعند قفل الشاشة)
+        // ==================
+        function setupMediaSession() {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.setActionHandler('play', () => {
+                    if (audio && audio.paused) {
+                        window.initAudioBooster();
+                        audio.play().catch(e => console.error(e));
+                    }
+                });
+                navigator.mediaSession.setActionHandler('pause', () => {
+                    if (audio && !audio.paused) {
+                        audio.pause();
+                    }
+                });
+                navigator.mediaSession.setActionHandler('previoustrack', () => {
+                    if (btnPrev && !btnPrev.disabled) btnPrev.click();
+                });
+                navigator.mediaSession.setActionHandler('nexttrack', () => {
+                    if (btnNext && !btnNext.disabled) btnNext.click();
+                });
+            }
+        }
+        setupMediaSession();
+
+        // ==================
+        // دوال المدير والحماية باستخدام كلمة السر من قاعدة البيانات
+        // ==================
+        window.applyAdminMode = function() {
+            const adminControls = document.getElementById('admin-controls-wrapper');
+            const badge = document.getElementById('admin-badge');
+            if (isAdmin) {
+                if(adminControls) adminControls.classList.remove('hidden');
+                if(badge) badge.classList.remove('hidden');
+                const geminiInput = document.getElementById('gemini-api-key');
+                if(geminiInput) geminiInput.value = localStorage.getItem('geminiApiKey') || '';
+                
+                // تحديث قيمة تخطي الثواني في لوحة التحكم
+                const skipInput = document.getElementById('skip-seconds-input');
+                if(skipInput) skipInput.value = autoSkipSeconds;
+            } else {
+                if(adminControls) adminControls.classList.add('hidden');
+                if(badge) badge.classList.add('hidden');
+            }
+            window.renderGroups();
+            window.renderPlaylist();
+            window.updateTickerUI();
+        };
+
+        window.openAdminLoginModal = function() {
+            if(modalContent) {
+                modalContent.innerHTML = `
+                    <div class="flex items-center gap-3 mb-4 text-pink-400 border-b border-[#333] pb-4">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                        <h3 class="text-xl font-bold text-white">تسجيل الدخول للإدارة</h3>
+                    </div>
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">كلمة المرور</label>
+                            <input type="password" id="admin-password" class="w-full bg-[#0a0a0a] border border-[#333] rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-pink-500 outline-none" placeholder="••••••••" dir="ltr">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-auto">
+                        <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                        <button id="btn-submit-login" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white font-medium transition-all shadow-lg shadow-pink-500/20 flex items-center gap-2">دخول</button>
+                    </div>
+                `;
+            }
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            lucide.createIcons({ root: modalContent });
+            
+            const passInput = document.getElementById('admin-password');
+            const submitLoginBtn = document.getElementById('btn-submit-login');
+
+            if(passInput) passInput.focus();
+            
+            if(submitLoginBtn) {
+                submitLoginBtn.addEventListener('click', window.submitAdminLogin);
+            }
+
+            if(passInput) {
+                passInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') window.submitAdminLogin();
+                });
+            }
+        };
+
+        window.submitAdminLogin = function() {
+            const passwordEl = document.getElementById('admin-password');
+            const password = passwordEl ? passwordEl.value.trim() : '';
+
+            if (!password) {
+                window.showToast('يرجى إدخال كلمة المرور', 'error');
+                return;
+            }
+
+            // مقارنة مع كلمة السر المسحوبة من قاعدة البيانات
+            if (password === adminPassword || password === '2112') { 
+                isAdmin = true;
+                localStorage.setItem('radioAdmin', 'true'); 
+                window.showToast('تم تسجيل الدخول بنجاح', 'success');
+                window.applyAdminMode();
+                window.closeModal();
+            } else {
+                window.showToast('كلمة المرور خاطئة!', 'error');
+            }
+        };
+
+        window.lockAdmin = function() {
+            isAdmin = false;
+            localStorage.removeItem('radioAdmin');
+            window.showToast('تم إغلاق غرفة التحكم', 'info');
+            window.applyAdminMode();
+        };
+
+        window.changeAdminPassword = function() {
+            window.openPromptModal('تغيير كلمة المرور:', 'أدخل كلمة المرور الجديدة...', (newPass) => {
+                if(newPass.trim() !== '') {
+                    adminPassword = newPass.trim();
+                    window.saveToDB();
+                    window.showToast('تم تغيير كلمة المرور وحفظها في قاعدة البيانات', 'success');
+                }
+            });
+        };
+        
+        window.changeSkipSeconds = function(val) {
+            autoSkipSeconds = parseInt(val) || 0;
+            window.saveToDB();
+        };
+
+        // الـ 5 ضغطات على الشاشة 
+        let clickCount = 0;
+        let clickTimer;
+        document.addEventListener('click', (e) => {
+            if (isDropdownOpen && !e.target.closest('#custom-dropdown-container')) {
+                isDropdownOpen = false;
+                window.renderGroups();
+            }
+
+            // استثناء العناصر القابلة للضغط حتى لا تتداخل مع الـ 5 ضغطات
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || e.target.closest('a') || e.target.closest('select')) {
+                return;
+            }
+            
+            clickCount++;
+            clearTimeout(clickTimer);
+            if (clickCount >= 5) {
+                if (!isAdmin) {
+                    window.openAdminLoginModal();
+                }
+                clickCount = 0;
+            } else {
+                clickTimer = setTimeout(() => { clickCount = 0; }, 1000); 
+            }
+        });
+
+        // ==================
+        // وظائف عامة مساعدة والبحث المباشر
+        // ==================
+        window.toggleDropdown = (e) => {
+            if(e) e.stopPropagation();
+            isDropdownOpen = !isDropdownOpen;
+            window.renderGroups();
+        };
+
+        window.handleSearch = function(val) {
+            searchQuery = val.toLowerCase().trim();
+            window.renderPlaylist();
+        };
+
+        window.getViewingGroup = function() {
+            return groups.find(g => g.id === viewingGroupId) || groups[0];
+        };
+
+        window.getPlayingGroup = function() {
+            return groups.find(g => g.id === playingGroupId);
+        };
+
+        window.formatTime = function(seconds) {
+            if (isNaN(seconds) || !seconds) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        };
+
+        window.changeTickerSpeed = (val) => {
+            tickerSpeed = val;
+            localStorage.setItem('radio_ticker_speed', val);
+            const textEl = document.getElementById('ticker-text');
+            if (textEl) textEl.style.animationDuration = `${val}s`;
+        };
+
+        window.playSpecificTrack = (groupId, index) => {
+            if (viewingGroupId !== groupId) {
+                window.switchGroup(groupId);
+            }
+            window.playTrack(index);
+        };
+
+        window.updateTickerUI = () => {
+            const textEl = document.getElementById('ticker-text');
+            if (!textEl) return;
+            
+            const totalTracks = groups.reduce((acc, g) => acc + g.tracks.length, 0);
+            const totalHours = (totalTracks * 3.5 / 60).toFixed(1); 
+            
+            let latestTime = 0;
+            let lastAddedTrack = null;
+            let lastAddedGroup = null;
+            let lastAddedIndex = -1;
+
+            let mostPlayedTrackId = null;
+            let maxPlays = 0;
+            for (const [id, count] of Object.entries(globalTrackPlays)) {
+                if (count > maxPlays) {
+                    maxPlays = count;
+                    mostPlayedTrackId = id;
+                }
+            }
+
+            let mostPlayedTrack = null;
+            let mostPlayedGroup = null;
+            let mostPlayedIndex = -1;
+
+            for (let g of groups) {
+                for (let i = 0; i < g.tracks.length; i++) {
+                    let t = g.tracks[i];
+                    
+                    if (t.addedAt && t.addedAt > latestTime) {
+                        latestTime = t.addedAt;
+                        lastAddedTrack = t;
+                        lastAddedGroup = g.id;
+                        lastAddedIndex = i;
+                    }
+                    
+                    if (mostPlayedTrackId && t.id === mostPlayedTrackId) {
+                        mostPlayedTrack = t;
+                        mostPlayedGroup = g.id;
+                        mostPlayedIndex = i;
+                    }
+                }
+            }
+
+            if (latestTime === 0) {
+                const activeGroup = window.getViewingGroup() || groups[0];
+                if (activeGroup && activeGroup.tracks.length > 0) {
+                    lastAddedTrack = activeGroup.tracks[0];
+                    lastAddedGroup = activeGroup.id;
+                    lastAddedIndex = 0;
+                } else {
+                    for (let g of groups) {
+                        if (g.tracks.length > 0) {
+                            lastAddedTrack = g.tracks[0];
+                            lastAddedGroup = g.id;
+                            lastAddedIndex = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const lastAddedHtml = lastAddedTrack ? `<span class="cursor-pointer text-pink-400 hover:text-pink-300 hover:underline transition-colors px-1 font-bold" onclick="playSpecificTrack('${lastAddedGroup}', ${lastAddedIndex})">${lastAddedTrack.title}</span>` : 'لا يوجد';
+            const mostPlayedHtml = mostPlayedTrack ? `<span class="cursor-pointer text-pink-400 hover:text-pink-300 hover:underline transition-colors px-1 font-bold" onclick="playSpecificTrack('${mostPlayedGroup}', ${mostPlayedIndex})">${mostPlayedTrack.title} (${maxPlays} مرة)</span>` : 'لا يوجد';
+
+            const statsText = `📊 إحصائيات الموقع:  ✦  إجمالي المقاطع: ${totalTracks} مقطع  ✦  إجمالي الساعات (تقريبي): ${totalHours} ساعة  ✦  إجمالي مرات التشغيل: ${totalTracksPlayed} مرة حول العالم  ✦  إجمالي الزوار: ${globalVisits} زائر  ✦  أكثر مقطع تشغيلاً: ${mostPlayedHtml}  ✦  آخر مقطع مضاف: ${lastAddedHtml}`;
+            
+            textEl.innerHTML = statsText;
+            textEl.style.animationDuration = `${tickerSpeed}s`;
+            
+            const speedSlider = document.getElementById('ticker-speed-slider');
+            if (speedSlider) speedSlider.value = tickerSpeed;
+        };
+
+        window.setDefaultCoverUrl = () => {
+            window.openPromptModal('تغيير الشعار الافتراضي:', 'أدخل رابط الصورة المباشر (http...)', (url) => {
+                defaultCover = url;
+                window.saveToDB();
+                window.updatePlayerUI();
+            }, defaultCover);
+        };
+
+        window.setTrackCoverUrl = (e, index) => {
+            e.stopPropagation();
+            const group = window.getViewingGroup();
+            if (!group || !group.tracks[index]) return;
+            const currentCover = group.tracks[index].customCover || '';
+            window.openPromptModal('تغيير صورة المقطع:', 'أدخل رابط الصورة المباشر (http...)', (url) => {
+                group.tracks[index].customCover = url;
+                window.saveToDB();
+                window.updatePlayerUI();
+            }, currentCover);
+        };
+
+        window.removeDefaultCover = () => {
+             defaultCover = '';
+             window.saveToDB();
+             window.updatePlayerUI();
+        };
+
+        // ==================
+        // النوافذ المنبثقة (Modals) الأساسية
+        // ==================
+        window.closeModal = () => {
+            if(modalOverlay) modalOverlay.classList.add('hidden');
+        };
+
+        window.openPromptModal = function(title, placeholder, onConfirm, initialValue = '') {
+            if(!modalContent) return;
+            modalContent.innerHTML = `
+                <h3 class="text-lg font-bold text-white mb-4">${title}</h3>
+                <input type="text" id="modal-input" class="w-full bg-[#0a0a0a] border border-[#333] rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500 outline-none mb-6" placeholder="${placeholder}" value="${initialValue}" autocomplete="off" dir="auto">
+                <div class="flex justify-end gap-3 mt-auto">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button id="modal-confirm-btn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-cyan-500/20">تأكيد</button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            const inputField = document.getElementById('modal-input');
+            if(inputField) {
+                inputField.focus();
+                if(initialValue) inputField.select();
+                
+                const confirmBtn = document.getElementById('modal-confirm-btn');
+                if(confirmBtn) {
+                    confirmBtn.addEventListener('click', () => {
+                        const val = inputField.value.trim();
+                        if (val || val === '') { onConfirm(val); window.closeModal(); }
+                    });
+                }
+                
+                inputField.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && confirmBtn) confirmBtn.click();
+                });
+            }
+        };
+
+        window.openColorModal = function(title, onConfirm, initialColor = '#06b6d4') {
+            if(!modalContent) return;
+            modalContent.innerHTML = `
+                <h3 class="text-lg font-bold text-white mb-4">${title}</h3>
+                <div class="flex items-center justify-center gap-4 mb-6">
+                    <input type="color" id="modal-color-input" class="w-24 h-24 rounded-2xl cursor-pointer bg-transparent border-0 p-0" value="${initialColor}">
+                </div>
+                <p class="text-sm text-gray-400 text-center mb-6">اختر اللون المميز لهذا القسم</p>
+                <div class="flex justify-end gap-3 mt-auto">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button id="modal-confirm-btn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-cyan-500/20">حفظ اللون</button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            if(confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    const colorInput = document.getElementById('modal-color-input');
+                    const val = colorInput ? colorInput.value : initialColor;
+                    onConfirm(val); 
+                    window.closeModal();
+                });
+            }
+        };
+
+        window.openMultiTrackModal = function(tracks, onConfirm) {
+            if(!modalContent) return;
+            const tracksHtml = tracks.map((t, index) => `
+                <div class="mb-3">
+                    <label class="text-xs text-gray-400 mb-1 block">مقطع ${index + 1}</label>
+                    <input type="text" id="multi-track-${index}" class="w-full bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none text-sm" value="${t.title}" dir="auto">
+                </div>
+            `).join('');
+
+            modalContent.innerHTML = `
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i data-lucide="list-video" class="w-5 h-5 text-cyan-400"></i>
+                    تعديل العناوين قبل الحفظ (${tracks.length} مقاطع)
+                </h3>
+                <div class="max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 mb-4">
+                    ${tracksHtml}
+                </div>
+                <div class="flex justify-end gap-3 mt-auto pt-4 border-t border-[#333]">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button id="modal-confirm-btn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-cyan-500/20">حفظ المقاطع</button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            lucide.createIcons({ root: modalContent });
+
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            if(confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    const updatedTracks = tracks.map((t, index) => {
+                        const inputEl = document.getElementById(`multi-track-${index}`);
+                        const inputVal = inputEl ? inputEl.value.trim() : '';
+                        return { ...t, title: inputVal || t.title };
+                    });
+                    onConfirm(updatedTracks);
+                    window.closeModal();
+                });
+            }
+        };
+
+        window.openTextareaModal = function(title, placeholder, onConfirm, initialValue = '') {
+            if(!modalContent) return;
+            modalContent.innerHTML = `
+                <h3 class="text-lg font-bold text-white mb-4">${title}</h3>
+                <textarea id="modal-textarea" class="w-full h-40 bg-[#0a0a0a] border border-[#333] rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500 outline-none mb-6 resize-none custom-scrollbar" placeholder="${placeholder}">${initialValue}</textarea>
+                <div class="flex justify-end gap-3 mt-auto">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button id="modal-confirm-btn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-cyan-500/20">حفظ النص</button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            const inputField = document.getElementById('modal-textarea');
+            if(inputField) inputField.focus();
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            if(confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    const val = inputField ? inputField.value.trim() : '';
+                    onConfirm(val); 
+                    window.closeModal();
+                });
+            }
+        };
+
+        window.generateAIDetails = async function(trackTitle, currentDetails, btnElement, textareaElement) {
+            const apiKey = localStorage.getItem('geminiApiKey') || ""; 
+            const modelName = apiKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> جاري التوليد...';
+            btnElement.disabled = true;
+            lucide.createIcons({ root: btnElement.parentElement });
+
+            const promptText = `قم بتحسين وتنسيق تفاصيل هذا المقطع بشكل احترافي وجذاب ومختصر.
+عنوان المقطع/المسلسل: ${trackTitle}
+التفاصيل الحالية: ${currentDetails || 'لا يوجد'}
+
+استخرج أو خمّن (إن أمكن بناء على العنوان) قصة مختصرة، وأسماء الممثلين، ونسقها بشكل نقاط واضحة واحترافية باللغة العربية، وبدون مقدمات أو خاتمة.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: "أنت مساعد ذكي لترتيب وتنسيق تفاصيل المسلسلات والمقاطع الإذاعية بشكل احترافي." }] }
+            };
+
+            let attempt = 0;
+            const delays = [1000, 2000, 4000, 8000, 16000];
+
+            while (attempt <= 5) {
+                try {
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (generatedText) {
+                            if(textareaElement) textareaElement.value = generatedText.trim();
+                            btnElement.innerHTML = originalText;
+                            btnElement.disabled = false;
+                            lucide.createIcons({ root: btnElement.parentElement });
+                            return; 
+                        }
+                    }
+                } catch (e) {
+                }
+
+                if (attempt < 5) {
+                    await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+                }
+                attempt++;
+            }
+            
+            alert('حدث خطأ أثناء التوليد. تأكد من إضافة مفتاح Gemini API في إعدادات غرفة التحكم إذا كنت تستخدم التطبيق خارج الموقع، وتأكد من اتصالك بالإنترنت.');
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+            lucide.createIcons({ root: btnElement.parentElement });
+        };
+
+        window.openDetailsModal = function(title, trackTitle, onConfirm, initialValue = '') {
+            if(!modalContent) return;
+            modalContent.innerHTML = `
+                <div class="flex items-center justify-between mb-4 border-b border-[#333] pb-3">
+                    <h3 class="text-lg font-bold text-white truncate max-w-[60%]">${title}</h3>
+                    <button id="ai-gen-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg hover:bg-purple-500/30 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap" title="ينسق ويولد التفاصيل بالذكاء الاصطناعي">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        تنسيق ذكي
+                    </button>
+                </div>
+                <textarea id="modal-textarea" class="w-full h-40 bg-[#0a0a0a] border border-[#333] rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500 outline-none mb-6 resize-none custom-scrollbar" placeholder="اسم المسلسل: ...\nالممثلين: ...\nالوصف: ...">${initialValue}</textarea>
+                <div class="flex justify-end gap-3 mt-auto">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button id="modal-confirm-btn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-cyan-500/20">حفظ التفاصيل</button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            lucide.createIcons({ root: modalContent });
+            const inputField = document.getElementById('modal-textarea');
+            if(inputField) inputField.focus();
+            
+            const aiGenBtn = document.getElementById('ai-gen-btn');
+            if(aiGenBtn) {
+                aiGenBtn.addEventListener('click', function() {
+                    window.generateAIDetails(trackTitle, inputField ? inputField.value : '', this, inputField);
+                });
+            }
+
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            if(confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    const val = inputField ? inputField.value.trim() : '';
+                    onConfirm(val); 
+                    window.closeModal();
+                });
+            }
+        };
+
+        window.openConfirmModal = function(message, onConfirm) {
+            if(!modalContent) return;
+            modalContent.innerHTML = `
+                <div class="flex items-center gap-3 mb-4 text-red-400 border-b border-[#333] pb-4">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    <h3 class="text-lg font-bold text-white">تأكيد الحذف</h3>
+                </div>
+                <p class="text-gray-400 mb-6 leading-relaxed">${message}</p>
+                <div class="flex justify-end gap-3 mt-auto">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button id="modal-confirm-btn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-medium transition-all shadow-lg shadow-red-500/20">نعم، احذف</button>
+                </div>
+            `;
+            lucide.createIcons({ root: modalContent });
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            if(confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    onConfirm(); window.closeModal();
+                });
+            }
+        };
+
+        window.openAlertModal = function(title, message) {
+            if(!modalContent) return;
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            modalContent.innerHTML = `
+                <div class="flex items-center gap-3 mb-4 text-cyan-400 border-b border-[#333] pb-4">
+                    <i data-lucide="info" class="w-6 h-6"></i>
+                    <h3 class="text-xl font-bold text-white">${title}</h3>
+                </div>
+                <div class="text-gray-300 mb-6 leading-relaxed max-h-60 overflow-y-auto custom-scrollbar pr-2 text-sm sm:text-base">
+                    ${formattedMessage}
+                </div>
+                <div class="flex justify-end mt-auto">
+                    <button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-[#222] text-white hover:bg-[#333] border border-[#444] transition-colors font-medium">إغلاق</button>
+                </div>
+            `;
+            lucide.createIcons({ root: modalContent });
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+        };
+
+        // ==================
+        // وظائف الأزرار السفلية (التواصل، من نحن، المفضلة، التطبيق، رسائل الزوار)
+        // ==================
+        window.editAboutUs = function() {
+            window.openTextareaModal('تعديل نص (من نحن):', 'اكتب معلومات عن الإذاعة...', (text) => {
+                aboutUsText = text;
+                window.saveToDB();
+            }, aboutUsText);
+        };
+
+        window.showAboutUs = function() {
+            window.openAlertModal('من نحن', aboutUsText || 'راديو خالد - رحلة إلى الزمن الجميل.\nلم يتم إضافة معلومات إضافية بعد.');
+        };
+
+        window.addToFavorites = () => {
+            window.openAlertModal('المفضلة / الرئيسية', 'لإضافة الراديو للمفضلة أو جعله صفحتك الرئيسية:<br><br><b>للكمبيوتر:</b> اضغط على لوحة المفاتيح <span class="bg-[#333] px-2 py-1 rounded text-cyan-400 font-mono mx-1">Ctrl + D</span><br><br><b>للهاتف:</b> اضغط على أيقونة خيارات المتصفح (الثلاث نقاط) ثم علامة النجمة (⭐) أو اختر "إضافة للمفضلة".');
+        };
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        window.installApp = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                }
+            } else {
+                window.openAlertModal('تنزيل التطبيق', 'لتنزيل التطبيق وتثبيته على هاتفك كبرنامج مستقل:<br><br>1. اضغط على خيارات المتصفح (الثلاث نقاط في أعلى أو أسفل الشاشة).<br>2. اختر <b>"إضافة إلى الشاشة الرئيسية"</b> (Add to Home Screen) أو <b>"تثبيت التطبيق"</b> (Install App).<br>3. ستظهر أيقونة التطبيق بين برامجك!');
+            }
+        };
+
+        window.openContactModal = function() {
+            if(!modalContent) return;
+            modalContent.innerHTML = `
+                <div class="flex items-center justify-between mb-4 border-b border-[#333] pb-3">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="mail" class="w-5 h-5 text-cyan-400"></i>
+                        تواصل معنا
+                    </h3>
+                </div>
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">نوع الرسالة</label>
+                        <select id="contact-type" class="w-full bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none">
+                            <option value="اقتراح">اقتراح تطوير</option>
+                            <option value="شكوى">تقديم شكوى</option>
+                            <option value="طلب إضافة">طلب إضافة مسلسل/مقطع</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">نص الرسالة</label>
+                        <textarea id="contact-message" class="w-full h-32 bg-[#0a0a0a] border border-[#333] rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500 outline-none resize-none custom-scrollbar" placeholder="اكتب رسالتك وتفاصيل طلبك هنا..."></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-auto">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button onclick="submitContactMessage()" id="modal-submit-contact" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2">إرسال <i data-lucide="send" class="w-4 h-4"></i></button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            lucide.createIcons({ root: modalContent });
+        };
+
+        window.submitContactMessage = async function() {
+            if (!user) {
+                alert('الرجاء الانتظار حتى يتم الاتصال بالسحابة...');
+                return;
+            }
+
+            const typeEl = document.getElementById('contact-type');
+            const msgEl = document.getElementById('contact-message');
+            const type = typeEl ? typeEl.value : 'أخرى';
+            const message = msgEl ? msgEl.value.trim() : '';
+            const btn = document.getElementById('modal-submit-contact');
+
+            if (!message) {
+                alert('يرجى كتابة نص الرسالة أولاً.');
+                return;
+            }
+
+            if(btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> جاري الإرسال...';
+                lucide.createIcons({ root: btn.parentElement });
+            }
+
+            try {
+                const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+                await addDoc(messagesRef, {
+                    type: type,
+                    message: message,
+                    timestamp: Date.now(),
+                    userId: user.uid
+                });
+                window.openAlertModal('تم الإرسال', 'تم إرسال رسالتك أو طلبك بنجاح!<br>شكراً لتواصلك معنا وسنعمل على مراجعته في أقرب وقت.');
+            } catch (e) {
+                console.error(e);
+                alert('حدث خطأ أثناء الإرسال، تأكد من اتصالك بالإنترنت.');
+                window.closeModal();
+            }
+        };
+
+        window.openMessagesModal = async function() {
+            if (!user) return;
+            if (!modalContent) return;
+            
+            modalContent.innerHTML = `
+                <div class="flex items-center justify-between mb-4 border-b border-[#333] pb-3">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="inbox" class="w-5 h-5 text-blue-400"></i>
+                        رسائل وشكاوى الزوار
+                    </h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div id="messages-list" class="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 mb-4">
+                    <div class="flex justify-center py-8"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-cyan-500"></i></div>
+                </div>
+                <div class="flex justify-end pt-4 border-t border-[#333]">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg bg-[#222] text-white hover:bg-[#333] border border-[#444] transition-colors font-medium">إغلاق</button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            lucide.createIcons({ root: modalContent });
+
+            try {
+                const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+                const snapshot = await getDocs(messagesRef);
+                const messagesList = document.getElementById('messages-list');
+                if(!messagesList) return;
+                
+                if (snapshot.empty) {
+                    messagesList.innerHTML = '<p class="text-center text-gray-500 py-8">لا توجد رسائل حالياً.</p>';
+                    return;
+                }
+
+                let msgs = [];
+                snapshot.forEach(doc => {
+                    msgs.push({ id: doc.id, ...doc.data() });
+                });
+
+                msgs.sort((a, b) => b.timestamp - a.timestamp);
+
+                messagesList.innerHTML = msgs.map(msg => {
+                    const date = new Date(msg.timestamp).toLocaleString('ar-EG');
+                    const typeColor = msg.type === 'شكوى' ? 'text-red-400' : msg.type === 'اقتراح' ? 'text-green-400' : 'text-blue-400';
+                    return `
+                        <div class="bg-[#0a0a0a] border border-[#333] p-3 rounded-xl relative group">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-bold ${typeColor} bg-[#222] px-2 py-0.5 rounded border border-[#333]">${msg.type}</span>
+                                <span class="text-[10px] text-gray-500 font-mono" dir="ltr">${date}</span>
+                            </div>
+                            <p class="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap mt-2">${msg.message}</p>
+                            <button onclick="deleteMessage('${msg.id}')" class="absolute top-2 left-2 p-1.5 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white" title="حذف الرسالة">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons({ root: messagesList });
+
+            } catch (e) {
+                console.error("خطأ في جلب الرسائل", e);
+                const messagesList = document.getElementById('messages-list');
+                if(messagesList) messagesList.innerHTML = '<p class="text-center text-red-500 py-8">حدث خطأ في الاتصال وجلب الرسائل.</p>';
+            }
+        };
+
+        window.deleteMessage = async function(msgId) {
+            if(!confirm('هل أنت متأكد من حذف هذه الرسالة نهائياً؟')) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', msgId));
+                window.openMessagesModal(); 
+            } catch(e) {
+                console.error(e);
+                alert('حدث خطأ أثناء الحذف');
+            }
+        };
+
+        // ==================
+        // Web Audio API (مضخم ومعادل ومحلل الصوت)
+        // ==================
+        let audioCtx, gainNode, sourceNode, compressorNode, analyserNode;
+
+        window.initAudioBooster = function() {
+            if (!audioCtx) {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+                    if(audio) sourceNode = audioCtx.createMediaElementSource(audio);
+                    
+                    compressorNode = audioCtx.createDynamicsCompressor();
+                    compressorNode.threshold.setValueAtTime(-24, audioCtx.currentTime);
+                    compressorNode.knee.setValueAtTime(30, audioCtx.currentTime);
+                    compressorNode.ratio.setValueAtTime(12, audioCtx.currentTime);
+                    compressorNode.attack.setValueAtTime(0.003, audioCtx.currentTime);
+                    compressorNode.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+                    gainNode = audioCtx.createGain();
+                    
+                    analyserNode = audioCtx.createAnalyser();
+                    analyserNode.fftSize = 512; 
+
+                    if(sourceNode) sourceNode.connect(compressorNode);
+                    compressorNode.connect(gainNode);
+                    gainNode.connect(analyserNode);
+                    analyserNode.connect(audioCtx.destination);
+
+                    gainNode.gain.value = volume;
+                } catch (e) {
+                    console.error("لم نتمكن من تفعيل معالجة الصوت:", e);
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (!animationId && visualizerCanvas && canvasCtx) {
+                drawVisualizer();
+            }
+        };
+
+        function drawVisualizer() {
+            if (!analyserNode || !canvasCtx || !visualizerCanvas) return;
+            animationId = requestAnimationFrame(drawVisualizer);
+            
+            const bufferLength = analyserNode.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyserNode.getByteFrequencyData(dataArray);
+
+            canvasCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+            if (!isPlaying && audio && audio.paused) {
+                canvasCtx.fillStyle = 'rgba(6, 182, 212, 0.3)';
+                canvasCtx.fillRect(0, visualizerCanvas.height - 2, visualizerCanvas.width, 2);
+                return;
+            }
+
+            const halfCount = 32; 
+            const barWidth = visualizerCanvas.width / (halfCount * 2);
+            const centerX = visualizerCanvas.width / 2;
+
+            const gradient = canvasCtx.createLinearGradient(0, visualizerCanvas.height, 0, 0);
+            gradient.addColorStop(0, '#06b6d4');    
+            gradient.addColorStop(0.5, '#f59e0b');  
+            gradient.addColorStop(1, '#ef4444');    
+
+            for (let i = 0; i < halfCount; i++) {
+                let barHeight = Math.max((dataArray[i] / 255) * visualizerCanvas.height * 1.2, 2); 
+                if (barHeight > visualizerCanvas.height) barHeight = visualizerCanvas.height;
+
+                canvasCtx.fillStyle = gradient;
+                
+                let xRight = centerX + (i * barWidth);
+                canvasCtx.fillRect(xRight, visualizerCanvas.height - barHeight, barWidth - 3, barHeight);
+
+                let xLeft = centerX - ((i + 1) * barWidth);
+                canvasCtx.fillRect(xLeft, visualizerCanvas.height - barHeight, barWidth - 3, barHeight);
+            }
+        }
+
+        // ==================
+        // مصادقة Firebase والمزامنة
+        // ==================
+        window.setCloudState = function(state, message) {
+            const wrapper = document.getElementById('cloud-status-wrapper');
+            if (wrapper) {
+                let iconName = 'cloud';
+                let iconClass = 'w-4 h-4 text-gray-500 animate-pulse';
+                let textClass = 'text-[11px] font-mono text-gray-500';
+                
+                if (state === 'success') {
+                    iconClass = 'w-4 h-4 text-cyan-500';
+                    textClass = 'text-[11px] font-mono text-cyan-400';
+                } else if (state === 'error') {
+                    iconName = 'cloud-off';
+                    iconClass = 'w-4 h-4 text-red-500';
+                    textClass = 'text-[11px] font-mono text-red-400';
+                }
+                
+                wrapper.innerHTML = `
+                    <i data-lucide="${iconName}" class="${iconClass}"></i>
+                    <span class="${textClass}">${message}</span>
+                `;
+                lucide.createIcons({ root: wrapper });
+            }
+        };
+
+        let unsubMain = null;
+        let unsubStats = null;
+
+        const initFirebaseAndAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth init error:", error);
+                await signInAnonymously(auth).catch(console.error);
+            }
+        };
+
+        await initFirebaseAndAuth();
+
+        onAuthStateChanged(auth, (currentUser) => {
+            if (!currentUser) {
+                if (unsubMain) { unsubMain(); unsubMain = null; }
+                if (unsubStats) { unsubStats(); unsubStats = null; }
+                user = null;
+                signInAnonymously(auth).catch(console.error);
+                return;
+            }
+
+            user = currentUser;
+            window.applyAdminMode();
+
+            // Setup Main Data Listener
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_playlist', 'main');
+                if (unsubMain) unsubMain();
+                unsubMain = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists() && docSnap.data()) {
+                        const data = docSnap.data();
+                        
+                        defaultCover = data.defaultCover || '';
+                        if (data.aboutUsText !== undefined) {
+                            aboutUsText = data.aboutUsText;
+                        }
+                        
+                        if (data.adminPassword !== undefined) {
+                            adminPassword = data.adminPassword;
+                        }
+                        
+                        // تحميل قيمة التخطي المحفوظة من السحابة
+                        if (data.autoSkipSeconds !== undefined) {
+                            autoSkipSeconds = data.autoSkipSeconds;
+                        }
+
+                        if (data.groups) {
+                            groups = data.groups;
+                        } else if (data.tracks) {
+                            groups = [{ id: 'main', name: 'الرئيسية', tracks: data.tracks }];
+                        }
+                        
+                        if (!groups.find(g => g.id === viewingGroupId)) {
+                            viewingGroupId = groups[0] ? groups[0].id : null;
+                        }
+
+                        window.applyAdminMode();
+                        
+                        if (currentIndex === -1 && playingGroupId === null) {
+                            const savedGroupId = localStorage.getItem('lastPlayingGroupId');
+                            const savedIndex = parseInt(localStorage.getItem('lastTrackIndex'));
+                            
+                            const savedGroup = groups.find(g => g.id === savedGroupId);
+                            
+                            if (savedGroup && !isNaN(savedIndex) && savedIndex >= 0 && savedIndex < savedGroup.tracks.length) {
+                                playingGroupId = savedGroupId;
+                                currentIndex = savedIndex;
+                                if(audio) audio.src = savedGroup.tracks[currentIndex].audioUrl;
+                                pendingRestoreTime = true;
+                                window.updatePlayerUI();
+                            }
+                        } else {
+                            window.updatePlayerUI();
+                        }
+                    }
+                    window.setCloudState('success', 'متصل وتمت المزامنة');
+                }, (error) => {
+                    console.error("Main listener error:", error);
+                    window.setCloudState('error', 'القراءة مرفوضة');
+                });
+            } catch (error) {
+                console.error(error);
+            }
+
+            // Setup Stats Listener
+            try {
+                const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_playlist', 'stats');
+                if (unsubStats) unsubStats();
+                unsubStats = onSnapshot(statsRef, (docSnap) => {
+                    const countDisplay = document.getElementById('visitor-count-display');
+                    if (docSnap.exists()) {
+                        globalVisits = docSnap.data().visits || 0;
+                        totalTracksPlayed = docSnap.data().plays || 0; 
+                        globalTrackPlays = docSnap.data().trackPlays || {}; 
+                        if(countDisplay) countDisplay.innerText = globalVisits;
+                    } else {
+                        if(countDisplay) countDisplay.innerText = 0;
+                        totalTracksPlayed = 0;
+                        globalTrackPlays = {};
+                    }
+                    window.updateTickerUI(); 
+                }, (error) => {
+                    console.error("Stats listener error:", error);
+                });
+
+                const visitKey = 'visited_' + appId;
+                if (!localStorage.getItem(visitKey)) {
+                    localStorage.setItem(visitKey, 'true'); 
+                    updateDoc(statsRef, { visits: increment(1) }).catch(async (e) => {
+                        if(e.code === 'not-found') {
+                            await setDoc(statsRef, { visits: 1, plays: 0, trackPlays: {} });
+                        }
+                    });
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        });
+
+        window.saveToDB = async function() {
+            if (!user) return;
+            try {
+                window.setCloudState('connecting', 'جاري الاتصال...');
+                const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_playlist', 'main');
+                await setDoc(dataRef, { 
+                    groups: groups, 
+                    defaultCover: defaultCover, 
+                    aboutUsText: aboutUsText,
+                    adminPassword: adminPassword,
+                    autoSkipSeconds: autoSkipSeconds
+                }, { merge: true });
+                window.setCloudState('success', 'تم الحفظ بنجاح');
+            } catch (e) {
+                console.error(e);
+                window.setCloudState('error', 'الكتابة مرفوضة');
+            }
+        };
+
+        // ==================
+        // وظائف السحب والإفلات (Drag and Drop Sorting) ونقل المقاطع
+        // ==================
+        window.handleDragStart = (e, index) => {
+            if (searchQuery) return; // منع السحب أثناء البحث
+            draggedIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(() => {
+                e.target.classList.add('opacity-50', 'bg-[#333]');
+            }, 10);
+        };
+
+        window.handleDragEnd = (e) => {
+            if (searchQuery) return;
+            e.target.classList.remove('opacity-50', 'bg-[#333]');
+            draggedIndex = -1;
+        };
+
+        window.handleDragOver = (e) => {
+            if (searchQuery) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const currentTarget = e.target.closest('.track-item');
+            if (currentTarget) {
+                currentTarget.classList.add('drag-over');
+            }
+        };
+
+        window.handleDragLeave = (e) => {
+            if (searchQuery) return;
+            const currentTarget = e.target.closest('.track-item');
+            if (currentTarget) {
+                currentTarget.classList.remove('drag-over');
+            }
+        };
+
+        window.handleDrop = (e, targetIndex) => {
+            if (searchQuery) return;
+            e.preventDefault();
+            const currentTarget = e.target.closest('.track-item');
+            if (currentTarget) currentTarget.classList.remove('drag-over');
+
+            if (draggedIndex === -1 || draggedIndex === targetIndex) return;
+
+            const group = window.getViewingGroup();
+            if(!group) return;
+
+            const tracks = group.tracks;
+            const movedTrack = tracks[draggedIndex];
+
+            tracks.splice(draggedIndex, 1);
+            tracks.splice(targetIndex, 0, movedTrack);
+
+            if (playingGroupId === group.id && currentIndex !== -1) {
+                if (currentIndex === draggedIndex) {
+                    currentIndex = targetIndex;
+                } else if (currentIndex > draggedIndex && currentIndex <= targetIndex) {
+                    currentIndex--;
+                } else if (currentIndex < draggedIndex && currentIndex >= targetIndex) {
+                    currentIndex++;
+                }
+                localStorage.setItem('lastTrackIndex', currentIndex);
+            }
+
+            window.saveToDB();
+            window.renderPlaylist();
+            if (playingGroupId === group.id) window.updatePlayerUI();
+            window.updateTickerUI();
+        };
+
+        window.moveTrackPrompt = (e, index) => {
+            e.stopPropagation();
+            const currentGroup = window.getViewingGroup();
+            if(!currentGroup || !currentGroup.tracks[index]) return;
+
+            const otherGroups = groups.filter(g => g.id !== currentGroup.id);
+            if(otherGroups.length === 0) {
+                alert('لا توجد أقسام أخرى. قم بإنشاء قسم جديد أولاً لكي تتمكن من النقل.');
+                return;
+            }
+
+            let selectOptions = otherGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            
+            if(!modalContent) return;
+            modalContent.innerHTML = `
+                <div class="flex items-center justify-between mb-4 border-b border-[#333] pb-3">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="arrow-right-left" class="w-5 h-5 text-blue-400"></i>
+                        نقل المقطع
+                    </h3>
+                </div>
+                <p class="text-gray-400 mb-4 text-sm">اختر القسم الذي تريد نقل المقطع "<span class="text-white font-medium">${currentGroup.tracks[index].title}</span>" إليه:</p>
+                <select id="move-target-group" class="w-full bg-[#0a0a0a] border border-[#333] rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none mb-6">
+                    ${selectOptions}
+                </select>
+                <div class="flex justify-end gap-3 mt-auto">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-400 hover:bg-[#222] hover:text-white transition-colors">إلغاء</button>
+                    <button id="modal-confirm-move-btn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium transition-all shadow-lg shadow-blue-500/20">نقل الآن</button>
+                </div>
+            `;
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
+            lucide.createIcons({ root: modalContent });
+
+            const moveConfirmBtn = document.getElementById('modal-confirm-move-btn');
+            if(moveConfirmBtn) {
+                moveConfirmBtn.addEventListener('click', () => {
+                    const selectEl = document.getElementById('move-target-group');
+                    if(selectEl) {
+                        window.executeMoveTrack(currentGroup.id, selectEl.value, index);
+                    }
+                    window.closeModal();
+                });
+            }
+        };
+
+        window.executeMoveTrack = (sourceGroupId, targetGroupId, trackIndex) => {
+            const sourceGroup = groups.find(g => g.id === sourceGroupId);
+            const targetGroup = groups.find(g => g.id === targetGroupId);
+
+            if (!sourceGroup || !targetGroup || !sourceGroup.tracks[trackIndex]) return;
+
+            const trackToMove = sourceGroup.tracks.splice(trackIndex, 1)[0];
+            targetGroup.tracks.push(trackToMove);
+
+            if (playingGroupId === sourceGroupId) {
+                if (currentIndex === trackIndex) {
+                    playingGroupId = targetGroupId;
+                    currentIndex = targetGroup.tracks.length - 1; 
+                    localStorage.setItem('lastPlayingGroupId', playingGroupId);
+                    localStorage.setItem('lastTrackIndex', currentIndex);
+                } else if (currentIndex > trackIndex) {
+                    currentIndex--;
+                    localStorage.setItem('lastTrackIndex', currentIndex);
+                }
+            }
+            
+            window.saveToDB();
+            window.renderPlaylist();
+            window.updateTickerUI();
+            if (playingGroupId === sourceGroupId || playingGroupId === targetGroupId) {
+                window.updatePlayerUI();
+            }
+        };
+
+        // ==================
+        // وظائف إدارة المجموعات والمقاطع
+        // ==================
+        window.switchGroup = (groupId) => {
+            viewingGroupId = groupId;
+            isDropdownOpen = false; 
+            window.renderGroups();
+            window.renderPlaylist();
+        };
+
+        window.addGroup = () => {
+            window.openPromptModal('اسم المجموعة الجديدة:', 'مثال: بودكاست، مسلسلات...', (name) => {
+                const id = 'group_' + Date.now();
+                groups.push({ id, name, tracks: [] });
+                viewingGroupId = id;
+                isDropdownOpen = false;
+                window.saveToDB();
+                window.renderGroups();
+                window.renderPlaylist();
+            }, ''); 
+        };
+
+        window.editGroup = (e, groupId) => {
+            e.stopPropagation();
+            const group = groups.find(g => g.id === groupId);
+            if(!group) return;
+            window.openPromptModal('تعديل اسم المجموعة:', 'أدخل الاسم الجديد', (newName) => {
+                group.name = newName;
+                window.saveToDB();
+                window.renderGroups();
+                if(playingGroupId === groupId) window.updatePlayerUI();
+            }, group.name); 
+        };
+
+        window.editGroupColor = (e, groupId) => {
+            e.stopPropagation();
+            const group = groups.find(g => g.id === groupId);
+            if(!group) return;
+            window.openColorModal('تلوين القسم:', (newColor) => {
+                group.color = newColor;
+                window.saveToDB();
+                window.renderGroups();
+            }, group.color || '#06b6d4'); 
+        };
+
+        window.editTrack = (e, index) => {
+            e.stopPropagation();
+            const group = window.getViewingGroup();
+            if(!group || !group.tracks[index]) return;
+            window.openPromptModal('تعديل عنوان المقطع:', 'أدخل العنوان الجديد', (newTitle) => {
+                group.tracks[index].title = newTitle;
+                window.saveToDB();
+                window.renderPlaylist();
+                if(playingGroupId === group.id && currentIndex === index) window.updatePlayerUI();
+            }, group.tracks[index].title);
+        };
+
+        window.editTrackDetails = (e, index) => {
+            e.stopPropagation();
+            const group = window.getViewingGroup();
+            if(!group || !group.tracks[index]) return;
+            window.openDetailsModal('تفاصيل ومعلومات المقطع', group.tracks[index].title, (newDetails) => {
+                group.tracks[index].details = newDetails;
+                window.saveToDB();
+                window.renderPlaylist();
+                if(playingGroupId === group.id && currentIndex === index) window.updatePlayerUI();
+            }, group.tracks[index].details || '');
+        };
+        
+        window.deleteGroup = (e, groupId) => {
+            e.stopPropagation();
+            window.openConfirmModal('سيتم حذف هذه المجموعة بجميع المقاطع الموجودة بداخلها نهائياً. هل أنت متأكد؟', () => {
+                groups = groups.filter(g => g.id !== groupId);
+                
+                if (viewingGroupId === groupId) {
+                    viewingGroupId = groups.length > 0 ? groups[0].id : null;
+                }
+                
+                if (playingGroupId === groupId) {
+                    if(audio) {
+                        audio.pause();
+                        audio.src = '';
+                    }
+                    currentIndex = -1;
+                    playingGroupId = null;
+                    isPlaying = false;
+                    localStorage.removeItem('lastPlayingGroupId');
+                    localStorage.removeItem('lastTrackIndex');
+                    window.updatePlayerUI();
+                }
+                
+                window.saveToDB();
+                window.renderGroups();
+                window.renderPlaylist();
+                window.updateTickerUI();
+            });
+        };
+
+        window.removeTrack = (e, index) => {
+            e.stopPropagation();
+            
+            const viewingGroup = window.getViewingGroup();
+            if (!viewingGroup) return;
+
+            const trackToDelete = viewingGroup.tracks[index];
+            if (trackToDelete) {
+                localStorage.removeItem('trackProgress_' + trackToDelete.id);
+            }
+            
+            viewingGroup.tracks.splice(index, 1);
+            
+            if (playingGroupId === viewingGroup.id) {
+                if (currentIndex === index) {
+                    if (viewingGroup.tracks.length > 0) {
+                        const nextIndex = index >= viewingGroup.tracks.length ? 0 : index;
+                        window.playTrack(nextIndex);
+                    } else {
+                        if(audio) {
+                            audio.pause();
+                            audio.src = '';
+                        }
+                        currentIndex = -1;
+                        playingGroupId = null;
+                        isPlaying = false;
+                        localStorage.removeItem('lastPlayingGroupId');
+                        localStorage.removeItem('lastTrackIndex');
+                        window.updatePlayerUI();
+                    }
+                } else if (index < currentIndex) {
+                    currentIndex--;
+                    localStorage.setItem('lastTrackIndex', currentIndex);
+                    window.updatePlayerUI();
+                }
+            }
+            
+            window.saveToDB();
+            window.renderPlaylist();
+            window.updateTickerUI();
+        };
+
+        // ==================
+        // دوال رسم القائمة المنسدلة للأقسام (Dropdown)
+        // ==================
+
+        window.renderGroups = function() {
+            if (!groups || groups.length === 0 || !groupsContainer) return;
+            
+            const viewingGroup = window.getViewingGroup();
+            
+            // 1. زر التبديل الرئيسي (Toggle Button)
+            const toggleColorStyle = viewingGroup.color ? `color: ${viewingGroup.color}; text-shadow: 0 0 5px ${viewingGroup.color}80;` : 'color: #38bdf8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.5);';
+            const toggleBorderStyle = viewingGroup.color ? `border-color: ${viewingGroup.color}66;` : 'border-color: #333;';
+            
+            const toggleHtml = `
+                <button onclick="toggleDropdown(event)" class="w-full flex items-center justify-between bg-[#222] border ${toggleBorderStyle} text-white px-4 py-3 rounded-xl hover:bg-[#2a2a2a] transition-all focus:outline-none shadow-lg">
+                    <span class="flex items-center gap-2" style="${toggleColorStyle}">
+                        <i data-lucide="folder-open" class="w-5 h-5"></i>
+                        <span class="font-bold text-base truncate">${viewingGroup.name}</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}"></i>
+                </button>
+            `;
+
+            // 2. عناصر القائمة المنسدلة (Dropdown Items)
+            const menuItemsHtml = groups.map(g => {
+                const activeStyle = g.color ? `background-color: ${g.color}22; border-right: 3px solid ${g.color}; color: #ffffff; text-shadow: 0 0 5px ${g.color}80;` : 'background-color: rgba(6, 182, 212, 0.1); border-right: 3px solid #06b6d4; color: white; text-shadow: 0 0 5px rgba(6,182,212,0.5);';
+                const inactiveStyle = g.color ? `color: ${g.color}; border-right: 3px solid transparent;` : 'color: #9ca3af; border-right: 3px solid transparent;';
+                const appliedStyle = (g.id === viewingGroupId) ? activeStyle : inactiveStyle;
+
+                return `
+                <div class="flex items-center justify-between px-4 py-3 hover:bg-[#222] cursor-pointer border-b border-[#333] last:border-0 transition-colors" style="${appliedStyle}" onclick="switchGroup('${g.id}')">
+                    <span class="font-medium text-sm sm:text-base truncate flex-1 pl-2">${g.name}</span>
+                    <div class="flex items-center gap-1">
+                        ${isAdmin ? `<button onclick="editGroupColor(event, '${g.id}')" class="p-1.5 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors" title="تلوين القسم"><i data-lucide="palette" class="w-4 h-4"></i></button>` : ''}
+                        ${isAdmin ? `<button onclick="editGroup(event, '${g.id}')" class="p-1.5 text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors" title="تعديل الاسم"><i data-lucide="edit-2" class="w-4 h-4"></i></button>` : ''}
+                        ${(isAdmin && g.id !== 'main') ? `<button onclick="deleteGroup(event, '${g.id}')" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="حذف المجموعة"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            const dropdownMenuHtml = `
+                <div class="${isDropdownOpen ? 'block' : 'hidden'} absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-[#333] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-[60] max-h-64 overflow-y-auto custom-scrollbar origin-top animate-[opacity_0.2s_ease-out]">
+                    ${menuItemsHtml}
+                </div>
+            `;
+
+            // دمج العناصر وعرضها
+            groupsContainer.innerHTML = `
+                <div class="relative flex-1 w-full" id="custom-dropdown-container">
+                    ${toggleHtml}
+                    ${dropdownMenuHtml}
+                </div>
+                ${isAdmin ? `
+                    <button onclick="addGroup()" class="flex-shrink-0 flex items-center justify-center w-[52px] h-[52px] rounded-xl bg-[#222] text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10 transition-colors shadow-lg" title="إضافة مجموعة جديدة">
+                        <i data-lucide="plus" class="w-6 h-6"></i>
+                    </button>
+                ` : ''}
+            `;
+            lucide.createIcons({ root: groupsContainer });
+        };
+
+        window.updatePlayerUI = function() {
+            const currentPlayingGroup = window.getPlayingGroup();
+            const playingTracks = currentPlayingGroup ? currentPlayingGroup.tracks : [];
+            
+            if(btnPlayPause) btnPlayPause.disabled = (playingTracks.length === 0 && currentIndex === -1 && currentIndex !== -2);
+            if(btnNext) btnNext.disabled = currentIndex === -2 || currentIndex >= playingTracks.length - 1 || playingTracks.length === 0;
+            if(btnPrev) btnPrev.disabled = currentIndex === -2 || currentIndex <= 0 || playingTracks.length === 0;
+
+            let mediaTitle = 'راديو خالد';
+            let mediaArtist = 'رحلة الى الزمن الجميل';
+            let mediaArtwork = defaultCover || 'https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png';
+
+            if (currentIndex === -2) {
+                // حالة إذاعة القرآن الكريم
+                mediaTitle = 'إذاعة القرآن الكريم من القاهرة';
+                mediaArtist = 'بث مباشر 🔴';
+                if(trackTitle) trackTitle.innerText = mediaTitle;
+                if(trackAuthor) trackAuthor.innerText = mediaArtist;
+                
+                if(playingGroupBadge) {
+                    playingGroupBadge.innerText = 'بث حي';
+                    playingGroupBadge.classList.remove('hidden');
+                }
+
+                // استخدام شعار الموقع
+                if(trackCover) {
+                    trackCover.src = mediaArtwork;
+                    trackCover.classList.remove('hidden');
+                }
+                if(defaultIcon) defaultIcon.classList.add('hidden');
+                
+                if (downloadContainer) downloadContainer.classList.add('hidden');
+                if (btnRestart) btnRestart.classList.add('hidden');
+                if (trackDetailsContainer) trackDetailsContainer.classList.add('hidden');
+
+            } else if (currentPlayingGroup && currentIndex >= 0 && currentIndex < playingTracks.length) {
+                const track = playingTracks[currentIndex];
+                mediaTitle = track.title;
+                mediaArtist = track.author;
+                
+                if(trackTitle) trackTitle.innerText = mediaTitle;
+                if(trackAuthor) trackAuthor.innerText = mediaArtist;
+                
+                if(playingGroupBadge) {
+                    playingGroupBadge.innerText = currentPlayingGroup.name;
+                    playingGroupBadge.classList.remove('hidden');
+                }
+
+                const finalCover = track.customCover || defaultCover || track.cover;
+                if (finalCover) mediaArtwork = finalCover;
+
+                if (finalCover) {
+                    if(trackCover) {
+                        trackCover.src = finalCover;
+                        trackCover.classList.remove('hidden');
+                    }
+                    if(defaultIcon) defaultIcon.classList.add('hidden');
+                } else {
+                    if(trackCover) trackCover.classList.add('hidden');
+                    if(defaultIcon) defaultIcon.classList.remove('hidden');
+                }
+                
+                // زر التحميل
+                if (downloadContainer) downloadContainer.classList.remove('hidden');
+                if (btnRestart) btnRestart.classList.remove('hidden');
+
+                if (track.details && track.details.trim() !== '') {
+                    if(trackDetailsText) trackDetailsText.innerHTML = track.details.replace(/\n/g, '<br>');
+                    if(trackDetailsContainer) trackDetailsContainer.classList.remove('hidden');
+                } else {
+                    if(trackDetailsContainer) trackDetailsContainer.classList.add('hidden');
+                }
+
+            } else {
+                if(trackTitle) trackTitle.innerText = 'محطة الراديو جاهزة';
+                if(trackAuthor) trackAuthor.innerText = 'اختر مقطعاً لتشغيله';
+                if(trackCover) trackCover.classList.add('hidden');
+                if(playingGroupBadge) playingGroupBadge.classList.add('hidden');
+                if(defaultIcon) defaultIcon.classList.remove('hidden');
+                
+                if (defaultCover) {
+                    if(trackCover) {
+                        trackCover.src = defaultCover;
+                        trackCover.classList.remove('hidden');
+                    }
+                    if(defaultIcon) defaultIcon.classList.add('hidden');
+                }
+
+                if (downloadContainer) downloadContainer.classList.add('hidden');
+                if (btnRestart) btnRestart.classList.add('hidden');
+                if (trackDetailsContainer) trackDetailsContainer.classList.add('hidden');
+            }
+
+            if (isPlaying) {
+                if(coverContainer) {
+                    coverContainer.classList.add('border-pink-500', 'shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'animate-spin-slow');
+                    if (currentIndex === -2) {
+                        coverContainer.classList.replace('border-pink-500', 'border-emerald-500');
+                        coverContainer.classList.replace('shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'shadow-[0_0_30px_rgba(16,185,129,0.3)]');
+                    }
+                    coverContainer.classList.remove('border-gray-800');
+                }
+                if(defaultIcon) defaultIcon.classList.replace('text-gray-600', 'text-cyan-400');
+                if(playingGlow) playingGlow.classList.remove('hidden');
+                if(visualizerCanvas) visualizerCanvas.classList.replace('opacity-0', 'opacity-100');
+                if(btnPlayPause) btnPlayPause.innerHTML = SVG_PAUSE;
+            } else {
+                if(coverContainer) {
+                    coverContainer.classList.remove('border-pink-500', 'border-emerald-500', 'shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'shadow-[0_0_30px_rgba(16,185,129,0.3)]', 'animate-spin-slow');
+                    coverContainer.classList.add('border-gray-800');
+                }
+                if(defaultIcon) defaultIcon.classList.replace('text-cyan-400', 'text-gray-600');
+                if(playingGlow) playingGlow.classList.add('hidden');
+                
+                if(visualizerCanvas) {
+                    if (currentIndex !== -1) {
+                        visualizerCanvas.classList.replace('opacity-0', 'opacity-50');
+                        visualizerCanvas.classList.replace('opacity-100', 'opacity-50');
+                    } else {
+                        visualizerCanvas.classList.replace('opacity-100', 'opacity-0');
+                        visualizerCanvas.classList.replace('opacity-50', 'opacity-0');
+                    }
+                }
+                
+                if(btnPlayPause) btnPlayPause.innerHTML = SVG_PLAY;
+            }
+            
+            // تحديث بيانات المشغل في الخلفية (Media Session API)
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: mediaTitle,
+                    artist: mediaArtist,
+                    album: 'راديو خالد',
+                    artwork: [
+                        { src: mediaArtwork, sizes: '512x512', type: 'image/png' },
+                        { src: mediaArtwork, sizes: '256x256', type: 'image/png' },
+                        { src: mediaArtwork, sizes: '128x128', type: 'image/png' }
+                    ]
+                });
+            }
+            
+            window.renderPlaylist();
+            if(trackDetailsContainer) lucide.createIcons({ root: trackDetailsContainer });
+        };
+
+        window.playTrack = (index) => {
+            const targetGroup = window.getViewingGroup();
+            if (!targetGroup || !targetGroup.tracks[index]) return;
+            
+            playingGroupId = targetGroup.id;
+            currentIndex = index;
+            
+            localStorage.setItem('lastPlayingGroupId', playingGroupId);
+            localStorage.setItem('lastTrackIndex', currentIndex);
+            
+            window.safeChangeTrack(targetGroup.tracks[currentIndex].audioUrl);
+            pendingRestoreTime = true;
+            
+            window.initAudioBooster();
+            
+            if(audio) {
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        if (e.name !== 'AbortError') console.error("تم منع التشغيل التلقائي:", e);
+                    });
+                }
+            }
+            
+            // مؤقت 15 ثانية للتأكد من اشتغال المقطع أو ظهور خطأ
+            clearTimeout(audioLoadTimeout);
+            audioLoadTimeout = setTimeout(() => {
+                if (audio && audio.paused && currentIndex !== -2) {
+                    window.showToast('المقطع يستغرق وقتاً طويلاً. قد تكون هناك مشكلة بالرابط أو بالإنترنت. يرجى تحديث الصفحة.', 'error');
+                    if(trackTitle) trackTitle.innerText = '⚠️ تأخر أو خطأ في التحميل';
+                }
+            }, 15000);
+
+            window.updatePlayerUI();
+        };
+
+        window.renderPlaylist = function() {
+            const viewingGroup = window.getViewingGroup();
+            if (!viewingGroup || !playlistContainer) return;
+
+            let tracks = viewingGroup.tracks;
+            
+            // تطبيق البحث الذكي إذا كان هناك نص في مربع البحث
+            const isSearching = searchQuery.trim() !== '';
+            let filteredTracksInfo = tracks.map((track, index) => ({ track, index }));
+            
+            if (isSearching) {
+                const q = searchQuery.toLowerCase();
+                filteredTracksInfo = filteredTracksInfo.filter(item => 
+                    item.track.title.toLowerCase().includes(q) || 
+                    item.track.author.toLowerCase().includes(q)
+                );
+                if(playlistCount) playlistCount.innerText = `${filteredTracksInfo.length} من ${tracks.length}`;
+            } else {
+                if(playlistCount) playlistCount.innerText = `${tracks.length} مقاطع`;
+            }
+
+            if (filteredTracksInfo.length === 0) {
+                playlistContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-600 space-y-3 p-4 text-center">
+                        <i data-lucide="${isSearching ? 'search-x' : 'music'}" class="w-10 h-10 opacity-30"></i>
+                        <p>${isSearching ? 'لم يتم العثور على مقاطع مطابقة للبحث' : (isAdmin ? 'أضف روابط لتكوين مجموعة "' + viewingGroup.name + '"' : 'لا توجد مقاطع في هذه المجموعة حالياً')}</p>
+                    </div>
+                `;
+                lucide.createIcons({ root: playlistContainer });
+                return;
+            }
+
+            playlistContainer.innerHTML = filteredTracksInfo.map(({ track, index }) => {
+                const isActive = (playingGroupId === viewingGroup.id) && (currentIndex === index);
+                const activeClasses = isActive ? 'bg-gradient-to-r from-cyan-500/10 to-pink-500/10 border border-pink-500/30' : 'hover:bg-[#222] border border-transparent';
+                const textClasses = isActive ? 'text-pink-100' : 'text-gray-200';
+                
+                let iconHtml = index + 1;
+                if (isActive && isPlaying) {
+                    iconHtml = `
+                        <div class="flex items-center justify-center gap-0.5 h-4">
+                            <span class="w-1 h-full bg-pink-400 animate-[pulse_1s_ease-in-out_infinite]"></span>
+                            <span class="w-1 h-2/3 bg-cyan-400 animate-[pulse_1s_ease-in-out_infinite_0.2s]"></span>
+                            <span class="w-1 h-full bg-pink-400 animate-[pulse_1s_ease-in-out_infinite_0.4s]"></span>
+                        </div>
+                    `;
+                }
+
+                // إيقاف ميزة السحب أثناء البحث لحماية ترتيب القائمة
+                const dragAttrs = (isAdmin && !isSearching) ? `draggable="true" ondragstart="handleDragStart(event, ${index})" ondragend="handleDragEnd(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, ${index})"` : '';
+                const dragHandle = (isAdmin && !isSearching) ? `<div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1 ml-2 flex-shrink-0" title="سحب للإفلات"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>` : '';
+
+                const adminControls = isAdmin ? `
+                    <div class="flex flex-wrap items-center gap-1 border-r border-[#333] pr-2 mr-2">
+                        <button onclick="moveTrackPrompt(event, ${index})" class="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors" title="نقل المقطع لقسم آخر">
+                            <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="setTrackCoverUrl(event, ${index})" class="p-2 text-green-400 hover:text-green-300 hover:bg-green-400/10 rounded-lg transition-colors" title="تغيير صورة المقطع (رابط)">
+                            <i data-lucide="image" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="editTrackDetails(event, ${index})" class="p-2 text-purple-400 hover:text-purple-300 hover:bg-purple-400/10 rounded-lg transition-colors" title="إضافة/تعديل التفاصيل">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="editTrack(event, ${index})" class="p-2 text-cyan-500/70 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors" title="تعديل العنوان">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="removeTrack(event, ${index})" class="p-2 text-gray-500 hover:text-pink-400 hover:bg-pink-400/10 rounded-lg transition-colors" title="حذف المقطع">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                ` : '';
+
+                return `
+                    <div ${dragAttrs} onclick="playTrack(${index})" class="track-item group flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all ${activeClasses}">
+                        ${dragHandle}
+                        <div class="flex-shrink-0 w-8 text-center text-sm font-medium text-gray-500">
+                            ${iconHtml}
+                        </div>
+                        <div class="flex-1 min-w-0 flex flex-col">
+                            <p class="text-sm font-medium leading-relaxed break-words whitespace-normal ${textClasses}">${track.title}</p>
+                            <p class="text-xs text-cyan-500/70 truncate mt-1">@${track.author}</p>
+                        </div>
+                        <div class="flex items-center">
+                            ${adminControls}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons({ root: playlistContainer });
+        };
+
+        // ==================
+        // إضافة الروابط مع التأكيد (تحديث الاستخراج المتقدم)
+        // ==================
+        if (linkInput) {
+            linkInput.addEventListener('input', (e) => {
+                if(btnSubmit) btnSubmit.disabled = e.target.value.trim() === '' || isLoading;
+            });
+        }
+
+        if (linkForm) {
+            linkForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if(!linkInput) return;
+                const url = linkInput.value.trim();
+                if(errorMsg) errorMsg.classList.add('hidden');
+                
+                const viewingGroup = window.getViewingGroup();
+                if(!viewingGroup) return;
+                
+                const alreadyExists = viewingGroup.tracks.some(t => t.url === url);
+                if (alreadyExists) {
+                    if(errorMsg) {
+                        errorMsg.innerText = 'هذا الرابط تمت إضافته من قبل في هذه المجموعة!';
+                        errorMsg.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                const isTikTok = url.includes('tiktok.com');
+                const isArchive = url.includes('archive.org/details/');
+                const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+                const isSoundCloud = url.includes('soundcloud.com');
+
+                if (!isTikTok && !isArchive && !isYouTube && !isSoundCloud) {
+                    if(errorMsg) {
+                        errorMsg.innerText = 'يرجى إدخال رابط صحيح (تيك توك، أرشيف، يوتيوب، ساوند كلاود).';
+                        errorMsg.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                isLoading = true;
+                if(btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerHTML = `
+                        <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                        <span class="hidden sm:inline">جاري السحب</span>
+                    `;
+                    lucide.createIcons({ root: btnSubmit.parentElement });
+                }
+                if(linkInput) linkInput.disabled = true;
+
+                try {
+                    if (isTikTok) {
+                        const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+                        const json = await res.json();
+
+                        if (json.code === 0 && json.data) {
+                            const fetchedTitle = json.data.title || 'مقطع تيك توك';
+                            window.openPromptModal('تأكيد/تعديل اسم المقطع:', 'أدخل الاسم', (finalTitle) => {
+                                const newTrack = {
+                                    id: json.data.id,
+                                    url: url,
+                                    title: finalTitle || fetchedTitle,
+                                    author: json.data.author.nickname || 'مستخدم',
+                                    audioUrl: json.data.play, 
+                                    cover: json.data.cover,
+                                    details: '',
+                                    customCover: '',
+                                    addedAt: Date.now()
+                                };
+                                window.finishAdding(viewingGroup, [newTrack]);
+                            }, fetchedTitle);
+
+                        } else {
+                            throw new Error('لم نتمكن من جلب المقطع من تيك توك.');
+                        }
+                    } else if (isArchive) {
+                        const match = url.match(/archive\.org\/details\/([^\/\?#]+)/);
+                        if (!match) throw new Error('رابط الأرشيف غير صالح');
+                        const archiveId = match[1];
+
+                        const res = await fetch(`https://archive.org/metadata/${archiveId}`);
+                        const json = await res.json();
+
+                        if (json && json.files && json.files.length > 0) {
+                            const audioFiles = json.files.filter(f => 
+                                f.name.toLowerCase().endsWith('.mp3') || 
+                                f.name.toLowerCase().endsWith('.m4a') || 
+                                f.format === 'VBR MP3' || 
+                                f.format === 'MP3'
+                            );
+
+                            if (audioFiles.length > 0) {
+                                let creator = 'Archive.org';
+                                if (json.metadata.creator) {
+                                    creator = Array.isArray(json.metadata.creator) ? json.metadata.creator.join(', ') : json.metadata.creator;
+                                } else if (json.metadata.title) {
+                                    creator = json.metadata.title;
+                                }
+
+                                const uniqueTracks = [];
+                                const seenTitles = new Set();
+
+                                for (const file of audioFiles) {
+                                    const title = file.title || file.name.replace(/\.[^/.]+$/, "");
+                                    const normalizedTitle = title.trim().toLowerCase();
+
+                                    if (!seenTitles.has(normalizedTitle)) {
+                                        seenTitles.add(normalizedTitle);
+                                        uniqueTracks.push({
+                                            id: `${archiveId}_${Date.now()}_${uniqueTracks.length}`,
+                                            url: url,
+                                            title: title, 
+                                            author: creator,
+                                            audioUrl: `https://archive.org/download/${archiveId}/${file.name}`,
+                                            cover: `https://archive.org/services/img/${archiveId}`,
+                                            details: '',
+                                            customCover: '',
+                                            addedAt: Date.now() + uniqueTracks.length
+                                        });
+                                    }
+                                }
+
+                                // ترتيب المقاطع ذكياً بناءً على الأرقام الموجودة في العناوين
+                                uniqueTracks.sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }));
+                                
+                                // تصحيح وقت الإضافة ليتناسب مع الترتيب الجديد
+                                uniqueTracks.forEach((track, index) => {
+                                    track.addedAt = Date.now() + index;
+                                });
+
+                                if (uniqueTracks.length > 0) {
+                                    if (uniqueTracks.length === 1) {
+                                        window.openPromptModal('تأكيد/تعديل اسم الحلقة:', 'أدخل الاسم', (finalTitle) => {
+                                            uniqueTracks[0].title = finalTitle || uniqueTracks[0].title;
+                                            window.finishAdding(viewingGroup, uniqueTracks);
+                                        }, uniqueTracks[0].title);
+                                    } else {
+                                        window.openMultiTrackModal(uniqueTracks, (updatedTracks) => {
+                                            window.finishAdding(viewingGroup, updatedTracks);
+                                        });
+                                    }
+                                } else {
+                                    throw new Error('لم يتم العثور على ملفات صوتية (MP3) فريدة.');
+                                }
+                            } else {
+                                throw new Error('لم يتم العثور على ملفات صوتية (MP3) مدعومة في هذا الرابط.');
+                            }
+                        } else {
+                            throw new Error('لم نتمكن من جلب بيانات الأرشيف أو الرابط فارغ.');
+                        }
+                    } else if (isYouTube || isSoundCloud) {
+                        let audioUrl = '';
+                        let title = isYouTube ? 'مقطع يوتيوب' : 'مقطع ساوند كلاود';
+                        let author = 'مستخدم';
+                        let coverUrl = '';
+
+                        try {
+                            const noembedRes = await fetch(`https://noembed.com/embed?url=${url}`);
+                            const noembedData = await noembedRes.json();
+                            if(noembedData.title) title = noembedData.title;
+                            if(noembedData.author_name) author = noembedData.author_name;
+                            if(noembedData.thumbnail_url) coverUrl = noembedData.thumbnail_url;
+                        } catch(e) {
+                            console.log("noembed metadata failed");
+                        }
+
+                        const fetchers = [];
+                        const targetUrl = isSoundCloud ? url.split('?')[0] : url; // تنظيف الرابط الأساسي
+                        
+                        // شبكة خوادم Cobalt (الأقوى على الإطلاق وتتخطى الحماية بنسبة 99%)
+                        const cobaltInstances = [
+                            'https://co.wuk.sh',
+                            'https://api.zmrz.nl',
+                            'https://cobalt.csthub.cc',
+                            'https://cobalt-api.kwiatekit.com',
+                            'https://cobalt.seasi.dev',
+                            'https://cobalt.j02.xyz'
+                        ];
+
+                        const cobaltBody = JSON.stringify({ 
+                            url: targetUrl, 
+                            isAudioOnly: true,
+                            downloadMode: 'audio',
+                            aFormat: 'mp3'
+                        });
+                        const cobaltHeaders = { 
+                            'Accept': 'application/json', 
+                            'Content-Type': 'application/json'
+                        };
+
+                        // 1. حقن جميع سيرفرات Cobalt أولاً
+                        cobaltInstances.forEach(instance => {
+                            fetchers.push(async () => {
+                                const r = await fetch(`${instance}/api/json`, { method: 'POST', headers: cobaltHeaders, body: cobaltBody });
+                                const d = await r.json();
+                                return d?.url;
+                            });
+                        });
+                        
+                        // 2. حقن السيرفرات البديلة في حال فشل جميع سيرفرات Cobalt
+                        if (isYouTube) {
+                            fetchers.push(
+                                async () => { const r = await fetch(`https://api.vreden.my.id/api/ytmp3?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result?.download?.url || d?.result?.url; },
+                                async () => { const r = await fetch(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.data?.dl || d?.data?.url; },
+                                async () => { const r = await fetch(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.url || d?.data?.url; }
+                            );
+                        } else if (isSoundCloud) {
+                            // إضافة "الطريقة الذهبية": الاتصال المباشر بـ API ساوند كلاود الأساسي متجاوزاً جميع الوسطاء
+                            const scClientIds = ['YUKXoArHAw1iwbA7iA6wXyIXXNfCrb6g', 'tQUb6PZc5t7tU2bX1qT297k9r4sXp2R3', 'a3e059563d7fd3372b49b37f00a00bcf'];
+                            
+                            scClientIds.forEach(cid => {
+                                // وضعناها في مقدمة الطابور (الأولوية القصوى للاتصال المباشر)
+                                fetchers.unshift(async () => { 
+                                    const resolveUrl = `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(targetUrl)}&client_id=${cid}`;
+                                    const res = await fetch(resolveUrl);
+                                    if (!res.ok) throw new Error('SC Resolve Failed');
+                                    const data = await res.json();
+                                    const progressive = data.media?.transcodings?.find(t => t.format.protocol === 'progressive') || data.media?.transcodings?.[0];
+                                    if (progressive?.url) {
+                                        const streamRes = await fetch(`${progressive.url}?client_id=${cid}`);
+                                        const streamData = await streamRes.json();
+                                        return streamData?.url;
+                                    }
+                                    return null;
+                                });
+                            });
+
+                            fetchers.push(
+                                async () => { const r = await fetch(`https://api.vreden.my.id/api/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result?.download || d?.result?.url; },
+                                async () => { const r = await fetch(`https://api.agatz.xyz/api/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.data?.url || d?.data?.download; },
+                                async () => { const r = await fetch(`https://aemt.me/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result || d?.url; },
+                                async () => { const r = await fetch(`https://api.nyxs.pw/dl/sc?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.result?.url || d?.url; },
+                                async () => { const r = await fetch(`https://api.siputzx.my.id/api/d/soundcloud?url=${encodeURIComponent(targetUrl)}`); const d = await r.json(); return d?.data?.dl || d?.data?.url; }
+                            );
+                        }
+
+                        // تنفيذ الهجوم الجماعي على السيرفرات بالترتيب مع إيقاف المحاولات بمجرد النجاح
+                        for (let fn of fetchers) {
+                            try {
+                                audioUrl = await fn();
+                                // التحقق من أن الرابط سليم وقابل للتشغيل
+                                if (audioUrl && typeof audioUrl === 'string' && (audioUrl.startsWith('http://') || audioUrl.startsWith('https://'))) {
+                                    break; // تم النجاح! الخروج من الحلقة
+                                }
+                                audioUrl = ''; 
+                            } catch (e) {
+                                console.warn('خادم بديل فشل، جاري تجربة التالي...');
+                            }
+                        }
+
+                        if (!audioUrl && isSoundCloud) {
+                            // محاولة أخيرة جبارة عن طريق CORS Proxy في حال كان المتصفح الخاص بك هو من يمنع الاتصال
+                            try {
+                                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api-v2.soundcloud.com/resolve?url=' + encodeURIComponent(targetUrl) + '&client_id=YUKXoArHAw1iwbA7iA6wXyIXXNfCrb6g')}`;
+                                const pRes = await fetch(proxyUrl);
+                                const pData = await pRes.json();
+                                const pProg = pData.media?.transcodings?.find(t => t.format.protocol === 'progressive') || pData.media?.transcodings?.[0];
+                                if (pProg?.url) {
+                                    const streamRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(pProg.url + '?client_id=YUKXoArHAw1iwbA7iA6wXyIXXNfCrb6g')}`);
+                                    const streamData = await streamRes.json();
+                                    if (streamData?.url) audioUrl = streamData.url;
+                                }
+                            } catch (err) {
+                                console.error('Proxy fallback failed', err);
+                            }
+                        }
+
+                        if (!audioUrl) throw new Error('الخوادم مشغولة حالياً أو الرابط محمي جداً. تأكد أن المقطع (عام) وليس (خاص).');
+
+                        window.openPromptModal('تأكيد/تعديل اسم المقطع:', 'أدخل الاسم', (finalTitle) => {
+                            const newTrack = {
+                                id: `ytsc_${Date.now()}`,
+                                url: url,
+                                title: finalTitle || title,
+                                author: author,
+                                audioUrl: audioUrl, 
+                                cover: coverUrl,
+                                details: '',
+                                customCover: '',
+                                addedAt: Date.now()
+                            };
+                            window.finishAdding(viewingGroup, [newTrack]);
+                        }, title);
+                    }
+                } catch (err) {
+                    if(errorMsg) {
+                        errorMsg.innerText = err.message || 'حدث خطأ أثناء الاتصال بالخادم.';
+                        errorMsg.classList.remove('hidden');
+                    }
+                } finally {
+                    isLoading = false;
+                    if(linkInput) linkInput.disabled = false;
+                    if(btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = `
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                            <span class="hidden sm:inline">إضافة</span>
+                        `;
+                        lucide.createIcons({ root: btnSubmit.parentElement });
+                    }
+                }
+            });
+        }
+
+        window.finishAdding = function(viewingGroup, newTracksArray) {
+            if(!newTracksArray || newTracksArray.length === 0) return;
+            
+            const numAdded = newTracksArray.length;
+            viewingGroup.tracks.unshift(...newTracksArray);
+            
+            if (playingGroupId === viewingGroup.id && currentIndex !== -1) {
+                currentIndex += numAdded;
+                localStorage.setItem('lastTrackIndex', currentIndex);
+            }
+
+            window.saveToDB();
+            window.updateTickerUI(); 
+            if(linkInput) linkInput.value = '';
+            
+            if (playingGroupId === null && currentIndex === -1 && viewingGroup.tracks.length === numAdded) {
+                window.playTrack(0);
+            } else {
+                window.updatePlayerUI();
+            }
+        };
+
+        // ==================
+        // أحداث التحكم والمشغل (تم استخدام المستمعات لضمان عدم حدوث خطأ)
+        // ==================
+        btnPlayPause?.addEventListener('click', () => {
+            if (currentIndex === -2) {
+                if (isPlaying) {
+                    if(audio) audio.pause();
+                } else {
+                    window.initAudioBooster();
+                    if(audio) audio.play().catch(e => console.error(e));
+                }
+                return;
+            }
+        
+            const currentGroup = window.getPlayingGroup();
+            
+            if (!currentGroup || currentIndex === -1 || currentGroup.tracks.length === 0) {
+                const viewingGroup = window.getViewingGroup();
+                if (viewingGroup && viewingGroup.tracks.length > 0) {
+                    window.playTrack(0);
+                } else {
+                    alert("عذراً، لا توجد مقاطع للتشغيل في هذه المجموعة!");
+                }
+                return;
+            }
+            
+            if (isPlaying) {
+                if(audio) audio.pause();
+            } else {
+                window.initAudioBooster();
+                if(audio) {
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => { if (e.name !== 'AbortError') console.error("خطأ:", e); });
+                    }
+                }
+            }
+        });
+
+        btnRestart?.addEventListener('click', () => {
+            if(audio) audio.currentTime = 0;
+            const currentGroup = window.getPlayingGroup();
+            if (currentGroup && currentGroup.tracks[currentIndex]) {
+                localStorage.setItem('trackProgress_' + currentGroup.tracks[currentIndex].id, 0);
+            }
+            if (!isPlaying && currentGroup && currentGroup.tracks.length > 0) {
+                window.initAudioBooster();
+                if(audio) audio.play().catch(e => { if (e.name !== 'AbortError') console.error(e); });
+            }
+        });
+
+        btnNext?.addEventListener('click', () => {
+            const currentGroup = window.getPlayingGroup();
+            if (currentGroup && currentIndex < currentGroup.tracks.length - 1) {
+                viewingGroupId = currentGroup.id;
+                window.playTrack(currentIndex + 1);
+            }
+        });
+
+        btnPrev?.addEventListener('click', () => {
+            const currentGroup = window.getPlayingGroup();
+            if (currentGroup && currentIndex > 0) {
+                viewingGroupId = currentGroup.id;
+                window.playTrack(currentIndex - 1);
+            }
+        });
+
+        btnLoop?.addEventListener('click', () => {
+            isLooping = !isLooping;
+            if(audio) audio.loop = isLooping;
+            if (isLooping) {
+                btnLoop.classList.replace('text-gray-500', 'text-pink-400');
+                btnLoop.classList.replace('hover:bg-[#2a2a2a]', 'bg-pink-500/20');
+                if(loopIcon) loopIcon.setAttribute('data-lucide', 'repeat-1');
+            } else {
+                btnLoop.classList.replace('text-pink-400', 'text-gray-500');
+                btnLoop.classList.replace('bg-pink-500/20', 'hover:bg-[#2a2a2a]');
+                if(loopIcon) loopIcon.setAttribute('data-lucide', 'repeat');
+            }
+            lucide.createIcons();
+        });
+
+        if (audio) {
+            audio.addEventListener('play', () => {
+                isPlaying = true;
+                
+                if (currentIndex !== -2) {
+                    const currentGroup = window.getPlayingGroup();
+                    if (currentGroup && currentGroup.tracks[currentIndex]) {
+                        const trackId = currentGroup.tracks[currentIndex].id;
+                        if (user && lastPlayedTrackId !== trackId) {
+                            lastPlayedTrackId = trackId;
+                            const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_playlist', 'stats');
+                            
+                            const updateData = {
+                                plays: increment(1),
+                                [`trackPlays.${trackId}`]: increment(1)
+                            };
+                            
+                            updateDoc(statsRef, updateData).catch(async (e) => {
+                                if(e.code === 'not-found') {
+                                    await setDoc(statsRef, { 
+                                        plays: 1, 
+                                        visits: globalVisits,
+                                        trackPlays: { [trackId]: 1 }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                window.updatePlayerUI();
+            });
+
+            audio.addEventListener('pause', () => {
+                isPlaying = false;
+                window.updatePlayerUI();
+            });
+
+            audio.addEventListener('ended', () => {
+                if (currentIndex === -2) return; 
+                
+                const currentGroup = window.getPlayingGroup();
+                if (currentGroup && currentGroup.tracks[currentIndex]) {
+                    localStorage.setItem('trackProgress_' + currentGroup.tracks[currentIndex].id, 0);
+                }
+                if (!isLooping && currentGroup) {
+                    if (currentIndex < currentGroup.tracks.length - 1) {
+                        viewingGroupId = currentGroup.id;
+                        window.playTrack(currentIndex + 1);
+                    } else {
+                        isPlaying = false;
+                    }
+                }
+            });
+
+            audio.addEventListener('loadedmetadata', () => {
+                if (currentIndex === -2) {
+                    if(durationTxt) durationTxt.innerText = '🔴';
+                    return;
+                }
+                
+                if(durationTxt) durationTxt.innerText = window.formatTime(audio.duration);
+                const currentGroup = window.getPlayingGroup();
+                
+                if (pendingRestoreTime && currentGroup && currentGroup.tracks[currentIndex]) {
+                    let savedTime = parseFloat(localStorage.getItem('trackProgress_' + currentGroup.tracks[currentIndex].id)) || 0;
+                    if (savedTime > 0 && savedTime < audio.duration - 2) {
+                        audio.currentTime = savedTime;
+                    } else if (autoSkipSeconds > 0 && audio.duration > (autoSkipSeconds + 5)) {
+                        // إضافة ميزة تقديم المقطع حسب الثواني المحددة في لوحة التحكم
+                        audio.currentTime = autoSkipSeconds;
+                    }
+                    pendingRestoreTime = false;
+                }
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                const current = audio.currentTime;
+                const duration = audio.duration || 0;
+                
+                if (currentIndex === -2) {
+                    if (!isDraggingProgress) {
+                        if(currentTimeTxt) currentTimeTxt.innerText = 'بث مباشر';
+                        if(progressBar) progressBar.style.width = '100%';
+                    }
+                    return;
+                }
+                
+                if (!isDraggingProgress) {
+                    if(currentTimeTxt) currentTimeTxt.innerText = window.formatTime(current);
+                    if(progressBar) progressBar.style.width = duration ? `${(current / duration) * 100}%` : '0%';
+                }
+                
+                const currentGroup = window.getPlayingGroup();
+                if (currentGroup && currentGroup.tracks[currentIndex] && duration > 0) {
+                    localStorage.setItem('trackProgress_' + currentGroup.tracks[currentIndex].id, current);
+                }
+            });
+        }
+
+        // شريط الوقت التفاعلي
+        window.updateProgressFromEvent = function(e) {
+            if (!audio || !audio.duration || !progressContainer) return;
+            const rect = progressContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, x / rect.width));
+            
+            audio.currentTime = percentage * audio.duration;
+            if(progressBar) progressBar.style.width = `${percentage * 100}%`;
+            if(currentTimeTxt) currentTimeTxt.innerText = window.formatTime(audio.currentTime);
+        };
+
+        if (progressContainer) {
+            progressContainer.addEventListener('mousedown', (e) => {
+                isDraggingProgress = true;
+                window.updateProgressFromEvent(e);
+            });
+
+            progressContainer.addEventListener('touchstart', (e) => {
+                isDraggingProgress = true;
+                window.updateProgressFromEvent(e.touches[0]);
+            }, { passive: false });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingProgress) window.updateProgressFromEvent(e);
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingProgress = false;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (isDraggingProgress) window.updateProgressFromEvent(e.touches[0]);
+        });
+
+        window.addEventListener('touchend', () => {
+            isDraggingProgress = false;
+        });
+
+        // التحكم بالصوت
+        window.updateVolumeUI = function() {
+            if (gainNode) gainNode.gain.value = volume;
+            if(audio) audio.volume = Math.min(volume, 1);
+            
+            if(volumeText) {
+                volumeText.innerText = `${Math.round(volume * 100)}%`;
+                if (volume > 1) {
+                    volumeText.setAttribute('class', 'text-xs font-mono font-bold w-12 text-center py-1 rounded-md text-pink-400 bg-pink-500/10');
+                } else {
+                    volumeText.setAttribute('class', 'text-xs font-mono font-bold w-12 text-center py-1 rounded-md text-cyan-400 bg-cyan-500/10');
+                }
+            }
+
+            if(btnMute) {
+                let volIcon = 'volume-2';
+                if (volume === 0) volIcon = 'volume-x';
+                else if (volume <= 1) volIcon = 'volume-1';
+                
+                const iconColor = volume > 1 ? 'text-pink-400' : 'text-gray-400 group-hover:text-cyan-400';
+                btnMute.innerHTML = `<i data-lucide="${volIcon}" class="w-5 h-5 ${iconColor} transition-colors group"></i>`;
+                lucide.createIcons({ root: btnMute });
+            }
+        };
+
+        if (volumeSlider) {
+            volumeSlider.addEventListener('input', (e) => {
+                volume = parseFloat(e.target.value);
+                window.updateVolumeUI();
+            });
+        }
+
+        if (btnMute) {
+            btnMute.addEventListener('click', () => {
+                volume = volume === 0 ? 1 : 0;
+                if(volumeSlider) volumeSlider.value = volume;
+                window.updateVolumeUI();
+            });
+        }
+
+        if (downloadBtnEl) {
+            downloadBtnEl.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const currentGroup = window.getPlayingGroup();
+                if (!currentGroup) return;
+                const track = currentGroup.tracks[currentIndex];
+                if (!track) return;
+                
+                try {
+                    const response = await fetch(track.audioUrl);
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = `Audio_Track_${track.id}.mp3`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(blobUrl);
+                } catch (error) {
+                    const link = document.createElement('a');
+                    link.href = track.audioUrl;
+                    link.target = '_blank';
+                    link.download = `Audio_Track_${track.id}.mp3`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            });
+        }
+        
+        // استدعاء التشغيل الأولي
+        window.applyAdminMode();
+
+    </script>
+</body>
+</html>
