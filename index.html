@@ -4,6 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>راديو خالد</title>
+    
+    <!-- إعدادات PWA لتثبيت التطبيق بايقونة أصلية -->
+    <meta name="theme-color" content="#ec4899">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="راديو خالد">
+    <link rel="manifest" id="manifest-link">
+    
+    <script>
+        // توليد ملف manifest برمجياً ليعمل التطبيق في ملف واحد
+        const manifestData = {
+            "name": "راديو خالد",
+            "short_name": "راديو خالد",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#111111",
+            "theme_color": "#ec4899",
+            "icons": [
+                {
+                    "src": "https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png",
+                    "sizes": "192x192",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                },
+                {
+                    "src": "https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }
+            ]
+        };
+        document.addEventListener('DOMContentLoaded', () => {
+            const manifestString = encodeURIComponent(JSON.stringify(manifestData));
+            document.getElementById('manifest-link').setAttribute('href', 'data:application/json;charset=utf-8,' + manifestString);
+        });
+    </script>
+
     <!-- تضمين مكتبة Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- تضمين مكتبة أيقونات Lucide -->
@@ -1565,6 +1604,7 @@
         };
 
         let deferredPrompt;
+        // الاستماع لحدث التثبيت الرسمي من المتصفح
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -1572,6 +1612,7 @@
 
         window.installApp = async () => {
             if (deferredPrompt) {
+                // إظهار نافذة التثبيت الرسمية الخاصة بالمتصفح
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
