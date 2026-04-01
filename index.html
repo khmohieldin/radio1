@@ -30,6 +30,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- تضمين مكتبة أيقونات Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- مكتبة HLS.js لتشغيل ملفات m3u8 إذا تم استخدامها لاحقاً -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
     <style>
         /* التعديل على السكرول ليصبح عريضاً وواضحاً ومميزاً */
@@ -44,11 +46,17 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { 
             background: linear-gradient(180deg, #ec4899, #06b6d4); 
             border-radius: 10px; 
-            border: 2px solid #1a1a1a; /* لعمل حواف تفصل المقبض عن الخلفية */
+            border: 2px solid #1a1a1a; 
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
             background: linear-gradient(180deg, #db2777, #0891b2); 
         }
+
+        /* سكرول أزرار الإذاعات العلوية */
+        .radio-buttons-scroll::-webkit-scrollbar { height: 4px; }
+        .radio-buttons-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .radio-buttons-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .radio-buttons-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
         
         .custom-range::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -64,11 +72,9 @@
           transform: scale(1.2);
         }
 
-        /* حركات مخصصة */
         @keyframes spin-slow { 100% { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 10s linear infinite; }
         
-        /* حركة الشريط المتحرك (من الشمال لليمين) */
         @keyframes scroll-ltr {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100vw); }
@@ -79,25 +85,19 @@
             animation: scroll-ltr 30s linear infinite;
             will-change: transform;
         }
-        
-        /* إيقاف الشريط عند مرور الماوس لسهولة الضغط على الروابط */
-        .animate-scroll-ltr:hover {
-            animation-play-state: paused;
-        }
+        .animate-scroll-ltr:hover { animation-play-state: paused; }
 
-        /* إخفاء زر التثبيت إذا كان التطبيق مثبتاً بالفعل ويعمل كبرنامج مستقل */
         @media all and (display-mode: standalone) {
             .install-btn-container { display: none !important; }
         }
 
-        /* تنسيقات المسك والإفلات */
         .drag-over { border-color: #06b6d4 !important; background-color: rgba(6, 182, 212, 0.1) !important; }
         .dragging { opacity: 0.5; background-color: #222; }
     </style>
 </head>
 <body class="min-h-screen bg-[#111111] text-gray-100 font-sans selection:bg-pink-500/30 flex flex-col">
 
-    <!-- شاشة الترحيب لتشغيل تتر البداية (الهوية الصوتية) -->
+    <!-- شاشة الترحيب لتشغيل تتر البداية -->
     <div id="intro-overlay" class="fixed inset-0 bg-[#0a0a0a] bg-opacity-95 z-[100] hidden flex-col items-center justify-center backdrop-blur-md transition-opacity duration-500">
         <div class="w-32 h-32 rounded-full bg-gradient-to-tr from-cyan-400 to-pink-500 flex items-center justify-center mb-8 animate-pulse cursor-pointer shadow-[0_0_50px_rgba(236,72,153,0.6)] hover:scale-105 transition-transform" onclick="startIntro()">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white ml-2"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
@@ -109,18 +109,17 @@
     <!-- نافذة منبثقة (Modal) عامة -->
     <div id="modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity p-4">
         <div id="modal-content" class="bg-[#1a1a1a] border border-[#333] p-6 rounded-2xl w-full max-w-md shadow-2xl transform scale-100 transition-transform max-h-[90vh] flex flex-col">
-            <!-- سيتم حقن محتوى النافذة هنا برمجياً -->
+            <!-- سيتم حقن محتوى النافذة هنا -->
         </div>
     </div>
 
     <!-- حاوية الإشعارات -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
-    <!-- أيقونة التثبيت العائمة (شبه تطبيق الهاتف) -->
+    <!-- أيقونة التثبيت العائمة -->
     <div onclick="installApp()" class="fixed bottom-6 left-4 sm:left-6 z-40 flex flex-col items-center gap-1.5 cursor-pointer group install-btn-container" title="تثبيت التطبيق">
         <div class="relative">
             <img src="https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png" alt="تطبيق راديو خالد" class="w-14 h-14 sm:w-16 sm:h-16 rounded-[1.25rem] shadow-[0_8px_20px_rgba(0,0,0,0.5)] group-hover:scale-105 group-active:scale-95 transition-all duration-300 border border-[#333] object-cover">
-            <!-- شارة التنزيل -->
             <div class="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-cyan-500 to-pink-500 text-white rounded-full p-1 shadow-lg animate-bounce border border-[#111]">
                 <i data-lucide="download" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
             </div>
@@ -134,9 +133,9 @@
     <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 flex-grow w-full">
         
         <!-- الترويسة -->
-        <header class="flex items-center justify-between pb-4 border-b border-gray-800">
+        <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-gray-800 gap-4">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-400 to-pink-500 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.3)]">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-400 to-pink-500 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.3)] shrink-0">
                     <i data-lucide="radio" class="w-6 h-6 text-white"></i>
                 </div>
                 <div>
@@ -144,7 +143,6 @@
                         <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-white to-pink-400">
                             راديو خالد
                         </h1>
-                        <!-- شارة غرفة التحكم -->
                         <span id="admin-badge" class="hidden bg-pink-500/20 text-pink-400 text-xs px-2 py-0.5 rounded border border-pink-500/30 flex items-center gap-1 cursor-pointer hover:bg-pink-500/30 transition-colors" onclick="lockAdmin()" title="إغلاق غرفة التحكم">
                             <i data-lucide="unlock" class="w-3 h-3"></i>
                             غرفة التحكم
@@ -152,7 +150,6 @@
                     </div>
                     <div class="flex items-center gap-3 mt-1 flex-wrap">
                         <p class="text-sm text-gray-400">رحلة الى الزمن الجميل</p>
-                        <!-- عداد الزوار المباشر -->
                         <div class="flex items-center gap-1.5 text-xs text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded border border-cyan-500/20" title="عدد الزوار الفريدين (مباشر)">
                             <i data-lucide="users" class="w-3.5 h-3.5"></i>
                             <span id="visitor-count-display" class="font-bold font-mono">...</span> زائر
@@ -161,12 +158,17 @@
                 </div>
             </div>
 
-            <!-- زر إذاعة القرآن الكريم -->
-            <button onclick="playQuranRadio()" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl transition-all font-bold shadow-lg shadow-emerald-500/20 border border-emerald-400/30 shrink-0">
-                <i data-lucide="radio" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                <span class="hidden sm:inline text-sm">إذاعة القرآن الكريم</span>
-                <span class="sm:hidden text-xs">القرآن الكريم</span>
-            </button>
+            <!-- أزرار الإذاعات المباشرة -->
+            <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto radio-buttons-scroll pb-2 sm:pb-0">
+                <button onclick="playQuranRadio()" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl transition-all font-bold shadow-lg shadow-emerald-500/20 border border-emerald-400/30 shrink-0 whitespace-nowrap">
+                    <i data-lucide="radio" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                    <span class="text-xs sm:text-sm">القرآن الكريم</span>
+                </button>
+                <button onclick="playDramaMixRadio()" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl transition-all font-bold shadow-lg shadow-purple-500/20 border border-purple-400/30 shrink-0 whitespace-nowrap">
+                    <i data-lucide="clapperboard" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                    <span class="text-xs sm:text-sm">دراما ميكس</span>
+                </button>
+            </div>
         </header>
 
         <!-- شريط الإحصائيات المتحرك -->
@@ -184,7 +186,6 @@
             <div class="lg:col-span-5 space-y-6">
                 <div class="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 shadow-2xl relative overflow-hidden">
                     
-                    <!-- تأثير الإضاءة الخلفية للتشغيل -->
                     <div id="playing-glow" class="hidden">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 blur-[50px] rounded-full pointer-events-none"></div>
                         <div class="absolute bottom-0 left-0 w-32 h-32 bg-cyan-500/20 blur-[50px] rounded-full pointer-events-none"></div>
@@ -192,16 +193,13 @@
                     
                     <div class="relative z-10 flex flex-col items-center text-center space-y-6">
                         
-                        <!-- تأثير الاستريو (Visualizer) -->
                         <canvas id="visualizer" class="w-full h-24 mb-4 transition-opacity duration-500 opacity-0" width="800" height="96" title="محلل الطيف الصوتي"></canvas>
 
-                        <!-- الغلاف -->
                         <div id="cover-container" class="w-40 h-40 rounded-full border-4 border-gray-800 flex items-center justify-center bg-black transition-all duration-500 overflow-hidden">
                             <i id="default-icon" data-lucide="music" class="w-12 h-12 text-gray-600"></i>
                             <img id="track-cover" alt="Cover" class="hidden w-full h-full object-cover opacity-60" onerror="this.onerror=null; this.removeAttribute('src'); this.classList.add('hidden'); document.getElementById('default-icon').classList.remove('hidden');" />
                         </div>
 
-                        <!-- معلومات المقطع -->
                         <div class="w-full">
                             <span id="playing-group-badge" class="hidden inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-pink-500/10 text-pink-400 border border-pink-500/20"></span>
                             <h2 id="track-title" class="text-lg font-bold text-white px-2 max-h-24 overflow-y-auto custom-scrollbar" title="لا يوجد مقطع">
@@ -213,7 +211,6 @@
                             </div>
                         </div>
 
-                        <!-- شريط التقدم (المدة) -->
                         <div class="w-full px-4" dir="ltr">
                             <div class="flex justify-between text-xs text-gray-500 mb-2 font-mono items-center">
                                 <div class="flex items-center gap-2">
@@ -230,28 +227,15 @@
                                 </div>
                             </div>
 
-                            <!-- شريط التحكم بمستوى الصوت (المضخم) -->
                             <div class="flex items-center gap-3 mt-4 bg-[#0a0a0a] p-2.5 rounded-xl border border-[#333]">
                                 <button id="btn-mute" class="text-gray-400 hover:text-cyan-400 transition-colors">
                                     <i id="volume-icon" data-lucide="volume-1" class="w-5 h-5"></i>
                                 </button>
-                                <input
-                                    type="range"
-                                    id="volume-slider"
-                                    min="0"
-                                    max="3"
-                                    step="0.05"
-                                    value="1"
-                                    class="flex-1 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer custom-range"
-                                    title="مستوى الصوت (يمكنك الرفع حتى 300%)"
-                                />
-                                <span id="volume-text" class="text-xs font-mono font-bold w-12 text-center py-1 rounded-md text-cyan-400 bg-cyan-500/10">
-                                    100%
-                                </span>
+                                <input type="range" id="volume-slider" min="0" max="3" step="0.05" value="1" class="flex-1 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer custom-range" title="مستوى الصوت (يمكنك الرفع حتى 300%)" />
+                                <span id="volume-text" class="text-xs font-mono font-bold w-12 text-center py-1 rounded-md text-cyan-400 bg-cyan-500/10">100%</span>
                             </div>
                         </div>
 
-                        <!-- أزرار التحكم -->
                         <div class="flex items-center justify-center gap-6 w-full pt-2">
                             <button id="btn-loop" class="p-3 rounded-full transition-colors text-gray-500 hover:text-white hover:bg-[#2a2a2a]" title="تكرار المقطع">
                                 <i id="loop-icon" data-lucide="repeat" class="w-5 h-5"></i>
@@ -270,7 +254,6 @@
                             </button>
                         </div>
                         
-                        <!-- زر التحميل بتصميم جديد ومختلف -->
                         <div id="download-container" class="pt-5 mt-2 border-t border-gray-800 w-full hidden">
                             <button id="btn-download" class="flex items-center justify-center gap-2 text-sm text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 transition-all py-3 px-6 rounded-xl mx-auto shadow-lg shadow-blue-500/20 font-bold border border-blue-400/30 w-[85%] hover:scale-105 active:scale-95">
                                 <i data-lucide="download" class="w-5 h-5"></i>
@@ -278,26 +261,20 @@
                             </button>
                         </div>
 
-                        <!-- تفاصيل المقطع -->
                         <div id="track-details-container" class="w-full pt-4 border-t border-gray-800 hidden text-right">
                             <h3 class="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
                                 <i data-lucide="info" class="w-4 h-4"></i>
                                 معلومات المقطع
                             </h3>
-                            <div id="track-details-text" class="text-sm text-gray-300 leading-relaxed bg-gray-900/50 p-4 rounded-xl border border-gray-800 text-right">
-                                <!-- سيتم حقن التفاصيل هنا برمجياً -->
-                            </div>
+                            <div id="track-details-text" class="text-sm text-gray-300 leading-relaxed bg-gray-900/50 p-4 rounded-xl border border-gray-800 text-right"></div>
                         </div>
-
                     </div>
                 </div>
-
             </div>
 
             <!-- القسم الأيسر: القائمة والإضافة -->
             <div class="lg:col-span-7 space-y-6">
                 
-                <!-- نموذج الإضافة وأدوات المدير -->
                 <div id="admin-controls-wrapper" class="bg-[#1a1a1a] border border-[#333] rounded-2xl p-4 hidden">
                     <label class="block text-sm font-medium text-cyan-400 mb-3 flex items-center gap-2">
                         <i data-lucide="settings" class="w-4 h-4"></i>
@@ -308,70 +285,49 @@
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <i data-lucide="link" class="h-5 w-5 text-gray-500"></i>
                             </div>
-                            <input
-                                type="url"
-                                id="link-input"
-                                dir="ltr"
-                                placeholder="رابط تيك توك، أرشيف، يوتيوب، ساوند كلاود..."
-                                class="block w-full pl-3 pr-10 py-3 bg-[#0a0a0a] border border-[#333] rounded-xl text-left text-gray-200 focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all disabled:opacity-50 outline-none"
-                            />
+                            <input type="url" id="link-input" dir="ltr" placeholder="تيك توك، يوتيوب، ساوند كلاود، أرشيف..." class="block w-full pl-3 pr-10 py-3 bg-[#0a0a0a] border border-[#333] rounded-xl text-left text-gray-200 focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all disabled:opacity-50 outline-none" />
                         </div>
-                        <button
-                            type="submit"
-                            id="btn-submit"
-                            class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-pink-600 hover:from-cyan-500 hover:to-pink-500 disabled:from-[#333] disabled:to-[#333] disabled:text-gray-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all min-w-[120px]"
-                            disabled
-                        >
+                        <button type="submit" id="btn-submit" class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-pink-600 hover:from-cyan-500 hover:to-pink-500 disabled:from-[#333] disabled:to-[#333] disabled:text-gray-500 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all min-w-[120px]" disabled>
                             <i id="submit-icon" data-lucide="plus" class="w-5 h-5"></i>
                             <span id="submit-text" class="hidden sm:inline">إضافة</span>
                         </button>
                     </form>
                     <p id="error-msg" class="text-red-400 text-sm mb-4 hidden"></p>
 
-                    <!-- أزرار التحكم بالصور ومن نحن ورسائل الزوار وتتر البداية و لون الخلفية -->
                     <div class="flex flex-col gap-3 border-t border-[#333] pt-4">
                         <div class="flex flex-wrap items-center gap-3">
-                            <button onclick="setupIntroTrackPrompt()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-orange-400 border border-orange-500/30 rounded-xl hover:bg-orange-500/10 transition-colors flex items-center gap-2" title="إعداد المقطع الافتتاحي للموقع (يشتغل مرة واحدة عند فتح الموقع)">
-                                <i data-lucide="play-circle" class="w-4 h-4"></i>
-                                تتر البداية (هوية الإذاعة)
+                            <button onclick="setupIntroTrackPrompt()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-orange-400 border border-orange-500/30 rounded-xl hover:bg-orange-500/10 transition-colors flex items-center gap-2">
+                                <i data-lucide="play-circle" class="w-4 h-4"></i> تتر البداية
                             </button>
-                            <button onclick="editPlaylistBgColor()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-rose-400 border border-rose-500/30 rounded-xl hover:bg-rose-500/10 transition-colors flex items-center gap-2" title="تغيير لون خلفية صندوق المقاطع">
-                                <i data-lucide="paint-bucket" class="w-4 h-4"></i>
-                                خلفية المقاطع
+                            <button onclick="editPlaylistBgColor()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-rose-400 border border-rose-500/30 rounded-xl hover:bg-rose-500/10 transition-colors flex items-center gap-2">
+                                <i data-lucide="paint-bucket" class="w-4 h-4"></i> خلفية المقاطع
                             </button>
-                            <button onclick="changeAdminPassword()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-yellow-400 border border-yellow-500/30 rounded-xl hover:bg-yellow-500/10 transition-colors flex items-center gap-2" title="تغيير كلمة مرور الدخول للوحة">
-                                <i data-lucide="key" class="w-4 h-4"></i>
-                                تغيير كلمة المرور
+                            <button onclick="changeAdminPassword()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-yellow-400 border border-yellow-500/30 rounded-xl hover:bg-yellow-500/10 transition-colors flex items-center gap-2">
+                                <i data-lucide="key" class="w-4 h-4"></i> كلمة المرور
                             </button>
                             <button onclick="setDefaultCoverUrl()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-purple-400 border border-purple-500/30 rounded-xl hover:bg-purple-500/10 transition-colors flex items-center gap-2">
-                                <i data-lucide="image" class="w-4 h-4"></i>
-                                الشعار الافتراضي
+                                <i data-lucide="image" class="w-4 h-4"></i> الشعار الافتراضي
                             </button>
                             <button onclick="removeDefaultCover()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/10 transition-colors flex items-center gap-2" id="btn-remove-default-cover">
-                                <i data-lucide="trash" class="w-4 h-4"></i>
-                                حذف الشعار
+                                <i data-lucide="trash" class="w-4 h-4"></i> حذف الشعار
                             </button>
                             <button onclick="editAboutUs()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-green-400 border border-green-500/30 rounded-xl hover:bg-green-500/10 transition-colors flex items-center gap-2">
-                                <i data-lucide="file-text" class="w-4 h-4"></i>
-                                تعديل (من نحن)
+                                <i data-lucide="file-text" class="w-4 h-4"></i> (من نحن)
                             </button>
-                            <button onclick="openMessagesModal()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-blue-400 border border-blue-500/30 rounded-xl hover:bg-blue-500/10 transition-colors flex items-center gap-2" title="الشكاوى والاقتراحات">
-                                <i data-lucide="inbox" class="w-4 h-4"></i>
-                                رسائل الزوار
+                            <button onclick="openMessagesModal()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-blue-400 border border-blue-500/30 rounded-xl hover:bg-blue-500/10 transition-colors flex items-center gap-2">
+                                <i data-lucide="inbox" class="w-4 h-4"></i> رسائل الزوار
                             </button>
                         </div>
                         
                         <div class="flex items-center gap-2 w-full mt-2">
                             <i data-lucide="sparkles" class="w-5 h-5 text-purple-400 flex-shrink-0"></i>
-                            <input type="password" id="gemini-api-key" placeholder="مفتاح الذكاء الاصطناعي (Gemini API Key) - مطلوب إذا كنت تعمل خارج مساحة العمل" class="flex-1 bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-purple-500 outline-none transition-all" onchange="localStorage.setItem('geminiApiKey', this.value)" title="أدخل مفتاح Gemini API الخاص بك هنا ليعمل الذكاء الاصطناعي على هاتفك أو استضافتك">
+                            <input type="password" id="gemini-api-key" placeholder="مفتاح الذكاء الاصطناعي (Gemini API Key)" class="flex-1 bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-purple-500 outline-none transition-all" onchange="localStorage.setItem('geminiApiKey', this.value)">
                         </div>
                     </div>
 
-                    <!-- إعداد سرعة الشريط المتحرك وتخطي المقدمة -->
                     <div class="flex flex-col gap-3 border-t border-[#333] pt-4 mt-2">
                         <label class="block text-sm font-medium text-cyan-400 flex items-center gap-2">
-                            <i data-lucide="gauge" class="w-4 h-4"></i>
-                            سرعة الشريط المتحرك
+                            <i data-lucide="gauge" class="w-4 h-4"></i> سرعة الشريط المتحرك
                         </label>
                         <div class="flex items-center gap-4">
                             <span class="text-xs text-gray-500 font-bold">سريع</span>
@@ -382,107 +338,75 @@
 
                     <div class="flex flex-col gap-3 border-t border-[#333] pt-4 mt-2">
                         <label class="block text-sm font-medium text-cyan-400 flex items-center gap-2">
-                            <i data-lucide="fast-forward" class="w-4 h-4"></i>
-                            تخطي مقدمة المقطع (ثواني)
+                            <i data-lucide="fast-forward" class="w-4 h-4"></i> تخطي مقدمة المقطع (ثواني)
                         </label>
                         <div class="flex items-center gap-4">
                             <input type="number" id="skip-seconds-input" min="0" max="300" value="20" class="w-20 bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2 text-sm text-center text-gray-200 focus:ring-2 focus:ring-cyan-500 outline-none transition-all" oninput="changeSkipSeconds(this.value)">
-                            <span class="text-xs text-gray-500 font-medium">اختر 0 لإلغاء التخطي التلقائي</span>
+                            <span class="text-xs text-gray-500 font-medium">اختر 0 لإلغاء التخطي</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- صندوق قائمة المقاطع القابل لتخصيص الخلفية -->
                 <div id="playlist-main-container" class="border border-[#333] rounded-2xl overflow-hidden flex flex-col h-[450px] lg:h-full lg:max-h-[650px] transition-colors duration-500 shadow-xl" style="background-color: #1a1a1a;">
                     
                     <div class="p-4 border-b border-black/20 flex items-center justify-between bg-black/40 backdrop-blur-md z-10 relative">
                         <h3 class="font-semibold text-gray-100 flex items-center gap-2 flex-wrap text-shadow">
                             مقاطع المجموعة
-                            <!-- منطقة حالة السحابة -->
                             <div id="cloud-status-wrapper" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/50 border border-white/10">
                                 <i data-lucide="cloud-off" class="w-4 h-4 text-gray-400"></i>
                                 <span class="text-[11px] font-mono text-gray-400">جاري الاتصال...</span>
                             </div>
                         </h3>
-                        <span id="playlist-count" class="text-xs font-bold px-2 py-1 bg-black/50 text-white rounded-md border border-white/10 shadow-sm">
-                            0 مقاطع
-                        </span>
+                        <span id="playlist-count" class="text-xs font-bold px-2 py-1 bg-black/50 text-white rounded-md border border-white/10 shadow-sm">0 مقاطع</span>
                     </div>
 
-                    <!-- شريط الأقسام (القائمة المنسدلة الذكية) -->
-                    <div id="groups-container" class="flex items-center gap-3 p-4 bg-black/20 border-b border-black/20 relative z-20">
-                        <!-- تُعرض القائمة المنسدلة هنا برمجياً -->
-                    </div>
+                    <div id="groups-container" class="flex items-center gap-3 p-4 bg-black/20 border-b border-black/20 relative z-20"></div>
 
-                    <!-- شريط البحث السريع والقائمة الخاصة المتطورة -->
                     <div class="px-4 py-3 bg-black/40 border-b border-black/20 flex flex-col sm:flex-row gap-3 items-center backdrop-blur-md">
                         <div class="relative w-full sm:flex-1">
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
                             </div>
-                            <input
-                                type="text"
-                                id="search-input"
-                                placeholder="ابحث عن مقطع..."
-                                class="block w-full pl-10 pr-10 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-gray-100 focus:ring-2 focus:ring-cyan-500 outline-none transition-all placeholder-gray-500"
-                                oninput="handleSearch(this.value)"
-                            />
+                            <input type="text" id="search-input" placeholder="ابحث عن مقطع..." class="block w-full pl-10 pr-10 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-gray-100 focus:ring-2 focus:ring-cyan-500 outline-none transition-all placeholder-gray-500" oninput="handleSearch(this.value)" />
                         </div>
                         <button onclick="switchGroup('local_queue')" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-500/20 text-pink-300 border border-pink-500/30 rounded-xl hover:bg-pink-500/30 transition-all font-bold text-sm whitespace-nowrap shadow-sm backdrop-blur-sm" title="الاستماع للمقاطع التي أضفتها أنت">
-                            <i data-lucide="list-music" class="w-4 h-4"></i>
-                            قائمتي الخاصة
+                            <i data-lucide="list-music" class="w-4 h-4"></i> قائمتي الخاصة
                         </button>
                     </div>
                     
-                    <div id="playlist-container" class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar relative z-10">
-                        <!-- القائمة تُعرض هنا بناءً على المجموعة المحددة والبحث -->
-                    </div>
+                    <div id="playlist-container" class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar relative z-10"></div>
                 </div>
                 
             </div>
         </div>
 
-        <!-- تذييل الصفحة (Footer) المحدث -->
         <footer class="mt-12 pt-6 border-t border-gray-800 flex flex-col gap-8 pb-8">
-            
-            <!-- أزرار الإجراءات الإضافية -->
             <div class="flex flex-wrap items-center justify-center gap-4">
                  <button onclick="installApp()" class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl shadow-lg shadow-pink-500/20 transition-all font-bold install-btn-container">
-                     <img src="https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png" class="w-6 h-6 rounded-md" alt="تطبيق راديو خالد">
-                     تنزيل التطبيق
+                     <img src="https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png" class="w-6 h-6 rounded-md" alt="تطبيق راديو خالد"> تنزيل التطبيق
                  </button>
                  <button onclick="addToFavorites()" class="flex items-center gap-2 px-5 py-2.5 bg-[#222] hover:bg-[#333] border border-[#444] text-yellow-400 rounded-xl transition-all font-medium shadow-md">
-                     <i data-lucide="star" class="w-4 h-4"></i>
-                     المفضلة / الرئيسية
+                     <i data-lucide="star" class="w-4 h-4"></i> المفضلة / الرئيسية
                  </button>
                  <button onclick="openContactModal()" class="flex items-center gap-2 px-5 py-2.5 bg-[#222] hover:bg-[#333] border border-[#444] text-cyan-400 rounded-xl transition-all font-medium shadow-md">
-                     <i data-lucide="mail" class="w-4 h-4"></i>
-                     تواصل معنا
+                     <i data-lucide="mail" class="w-4 h-4"></i> تواصل معنا
                  </button>
                  <button onclick="showAboutUs()" class="flex items-center gap-2 px-5 py-2.5 bg-[#222] hover:bg-[#333] border border-[#444] text-purple-400 rounded-xl transition-all font-medium shadow-md">
-                     <i data-lucide="info" class="w-4 h-4"></i>
-                     من نحن
+                     <i data-lucide="info" class="w-4 h-4"></i> من نحن
                  </button>
             </div>
 
-            <!-- حقوق التطوير والروابط الاجتماعية -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm px-4">
-                <p class="text-gray-400 font-medium">
-                    تطوير <span class="text-cyan-400 font-bold">خالد محي الدين</span>
-                </p>
+                <p class="text-gray-400 font-medium">تطوير <span class="text-cyan-400 font-bold">خالد محي الدين</span></p>
                 <div class="flex items-center gap-6">
                     <a href="tel:00201018282460" class="flex items-center gap-2 text-gray-500 hover:text-cyan-400 transition-colors" title="اتصال">
-                        <i data-lucide="phone" class="w-4 h-4"></i>
-                        <span dir="ltr">00201018282460</span>
+                        <i data-lucide="phone" class="w-4 h-4"></i><span dir="ltr">00201018282460</span>
                     </a>
                     <a href="https://wa.me/201018282460" target="_blank" class="flex items-center gap-2 text-gray-500 hover:text-green-500 transition-colors" title="واتساب">
-                        <i data-lucide="message-circle" class="w-4 h-4"></i>
-                        <span>واتساب</span>
+                        <i data-lucide="message-circle" class="w-4 h-4"></i><span>واتساب</span>
                     </a>
                     <a href="https://www.facebook.com/khaledmohyalden" target="_blank" class="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors" title="فيسبوك">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" />
-                        </svg>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
                         <span>فيسبوك</span>
                     </a>
                 </div>
@@ -516,7 +440,6 @@
         const SVG_PLAY = `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>`;
         const SVG_PAUSE = `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="4" height="16" rx="1"></rect><rect x="6" y="4" width="4" height="16" rx="1"></rect></svg>`;
 
-        // وظائف الإشعارات
         window.showToast = (message, type = 'info') => {
             const toastContainer = document.getElementById('toast-container');
             if (!toastContainer) return;
@@ -538,18 +461,17 @@
             }, 3000);
         };
 
-        // متغيرات الحالة العامة
         let groups = [{ id: 'main', name: 'الرئيسية', tracks: [] }];
-        let localQueue = JSON.parse(localStorage.getItem('my_local_queue') || '[]'); // قائمة المستخدم الخاصة
+        let localQueue = JSON.parse(localStorage.getItem('my_local_queue') || '[]'); 
         
-        let introTrack = null; // متغير تتر البداية
-        let introPlayed = sessionStorage.getItem('introPlayed') === 'true'; // هل تم تشغيل التتر في هذه الجلسة؟
+        let introTrack = null; 
+        let introPlayed = sessionStorage.getItem('introPlayed') === 'true'; 
 
         let defaultCover = ''; 
         let aboutUsText = ''; 
         let adminPassword = '2112'; 
         let autoSkipSeconds = 20; 
-        let playlistBgColor = '#1a1a1a'; // لون خلفية صندوق المقاطع الافتراضي
+        let playlistBgColor = '#1a1a1a';
 
         let globalVisits = 0;
         let totalTracksPlayed = 0; 
@@ -559,7 +481,7 @@
         let viewingGroupId = 'main'; 
         let playingGroupId = null;   
 
-        let currentIndex = -1; 
+        let currentIndex = -1; // -2 Quran, -3 Intro, -4 Drama Mix
         let isPlaying = false;
         let isLooping = false;
         let isLoading = false;
@@ -573,19 +495,58 @@
         
         let isDropdownOpen = false; 
         let isAdmin = localStorage.getItem('radioAdmin') === 'true'; 
-
         let searchQuery = '';
 
         const audio = document.getElementById('audio-player');
+
+        // دالة تشغيل آمنة للتعامل مع الإلغاء المفاجئ من المتصفح
+        window.safePlayAudio = function() {
+            if (!audio) return;
+            if (!audio.getAttribute('src') && !window.hlsPlayer && !audio.currentSrc) return;
+            if (audio.src === window.location.href) return; 
+
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    if (error.name !== 'AbortError' && error.name !== 'NotSupportedError') {
+                        console.error("خطأ في التشغيل:", error);
+                    }
+                });
+            }
+        };
         
         window.safeChangeTrack = function(newSrc) {
             if(audio) {
                 audio.pause();
                 audio.removeAttribute('src'); 
-                audio.load(); 
+                
+                if(window.hlsPlayer) {
+                    window.hlsPlayer.destroy();
+                    window.hlsPlayer = null;
+                }
+                
+                // منع استدعاء load() إذا كان الرابط فارغ لتجنب خطأ No supported source was found
+                if (!newSrc || newSrc.trim() === '') {
+                    return; 
+                }
+                
                 audio.setAttribute('crossorigin', 'anonymous'); 
-                audio.src = newSrc;
-                audio.load();
+                
+                if (newSrc.includes('.m3u8')) {
+                    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                        window.hlsPlayer = new Hls();
+                        window.hlsPlayer.loadSource(newSrc);
+                        window.hlsPlayer.attachMedia(audio);
+                    } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+                        audio.src = newSrc;
+                        audio.load();
+                    } else {
+                        window.showToast('متصفحك لا يدعم هذا النوع من البث المباشر.', 'error');
+                    }
+                } else {
+                    audio.src = newSrc;
+                    audio.load();
+                }
             }
         };
 
@@ -597,27 +558,80 @@
 
             window.safeChangeTrack('https://stream.radiojar.com/8s5u5tpdtwzuv'); 
             pendingRestoreTime = false;
-
             window.initAudioBooster();
             
-            if(audio) {
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => {
-                        console.error("تعذر تشغيل الإذاعة تلقائياً:", e);
-                    });
-                }
-            }
+            window.safePlayAudio();
             window.updatePlayerUI();
         };
 
-        // دالة سحب بيانات الروابط بشكل عام لاستخدامها في أكثر من مكان
+        // نظام سحب واستخلاص البث المباشر من صفحة الخارجية (Scraping System)
+        window.playDramaMixRadio = async () => {
+            playingGroupId = null;
+            currentIndex = -4; 
+            localStorage.setItem('lastTrackIndex', -4);
+            localStorage.removeItem('lastPlayingGroupId');
+
+            const pageUrl = 'https://mixmix.neocities.org/fm/drama';
+            window.safeChangeTrack(''); 
+            
+            const titleEl = document.getElementById('track-title');
+            if (titleEl) titleEl.innerText = '⏳ جاري استخراج البث المباشر...';
+            window.updatePlayerUI();
+
+            try {
+                // 1. جلب الكود المصدري للصفحة عبر خادم وسيط لتخطي حماية CORS
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(pageUrl)}`;
+                const res = await fetch(proxyUrl);
+                const data = await res.json();
+                const htmlContent = data.contents;
+
+                let streamUrl = null;
+
+                // 2. محاولة استخراج مسار الصوت باستخدام DOM Parser
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, 'text/html');
+                const audioEl = doc.querySelector('audio source') || doc.querySelector('audio');
+                
+                if (audioEl && audioEl.src) {
+                    streamUrl = audioEl.src;
+                } else {
+                    // 3. محاولة استخراج مسار الصوت بالبحث الذكي (Regex) في كل الأكواد (حتى لو كان مخفياً بداخل جافاسكريبت)
+                    const broadRegex = /(https?:\/\/[^\s"'<>]+(?:\.m3u8|\.mp3|zeno\.fm|radiojar|stream|live|listen)[^\s"'<>]*)/i;
+                    const match = htmlContent.match(broadRegex);
+                    if (match && match[1]) {
+                        streamUrl = match[1];
+                    }
+                }
+
+                // تنظيف الرابط في حال تم استخراج رابط نسبي
+                if (streamUrl && streamUrl.startsWith('/')) {
+                    streamUrl = new URL(streamUrl, pageUrl).href;
+                }
+
+                if (streamUrl) {
+                    // تم العثور على الرابط، جاري التشغيل
+                    window.safeChangeTrack(streamUrl);
+                    pendingRestoreTime = false;
+                    window.initAudioBooster();
+                    window.safePlayAudio();
+                    if (titleEl) titleEl.innerText = 'دراما ميكس';
+                } else {
+                    throw new Error('لم يتم العثور على رابط بث مدعوم في الصفحة.');
+                }
+
+            } catch (err) {
+                console.error("Scraping Error:", err);
+                window.showToast('تعذر استخراج البث من الموقع المرجعي', 'error');
+                if (titleEl) titleEl.innerText = '❌ خطأ في البث المباشر';
+            }
+        };
+
         window.fetchLinkInfo = async function(url) {
             const isTikTok = url.includes('tiktok.com');
             const isArchive = url.includes('archive.org/details/');
             const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
             const isSoundCloud = url.includes('soundcloud.com');
-
+            
             if (!isTikTok && !isArchive && !isYouTube && !isSoundCloud) {
                 throw new Error('يرجى إدخال رابط صحيح (تيك توك، أرشيف، يوتيوب، ساوند كلاود).');
             }
@@ -835,7 +849,6 @@
             }, playlistBgColor);
         };
 
-        // نظام التجديد التلقائي للروابط المنتهية
         window.autoRefreshTrack = async function(track, group, index) {
             window.showToast('الرابط انتهت صلاحيته... جاري تجديد المقطع تلقائياً 🔄', 'info');
             const titleEl = document.getElementById('track-title');
@@ -854,7 +867,7 @@
                         if (titleEl) titleEl.innerText = track.title;
                         window.safeChangeTrack(track.audioUrl);
                         window.initAudioBooster();
-                        if(audio) audio.play();
+                        window.safePlayAudio();
                     }
                 } else {
                     throw new Error('Failed to refresh');
@@ -869,8 +882,6 @@
         if(audio) {
             audio.addEventListener('error', () => {
                 if (audio.error && (audio.error.code === 4 || audio.error.code === 3)) { 
-                    
-                    // محاولة التجديد التلقائي للتتر
                     if (currentIndex === -3 && introTrack) {
                          if (!introTrack.isRefreshing) {
                              introTrack.isRefreshing = true;
@@ -878,7 +889,6 @@
                              return;
                          }
                     } else {
-                        // محاولة التجديد للمقاطع العادية
                         const currentGroup = window.getPlayingGroup();
                         if (currentGroup && currentIndex >= 0) {
                             const track = currentGroup.tracks[currentIndex];
@@ -897,29 +907,31 @@
                         audio.removeAttribute('crossorigin');
                         const currentSrc = audio.src;
                         audio.removeAttribute('src');
-                        audio.load();
-                        audio.src = currentSrc; 
-                        audio.load();
-                        audio.play().catch(e => {
+                        
+                        // فقط نقوم بالتحميل إذا كان هناك مسار صالح لنتجنب خطأ Failed to load
+                        if (currentSrc && currentSrc !== window.location.href) {
+                            audio.src = currentSrc; 
+                            audio.load();
+                            window.safePlayAudio();
+                        } else {
                             window.showToast('حدثت مشكلة في التشغيل', 'error');
                             const titleEl = document.getElementById('track-title');
                             if (titleEl) titleEl.innerText = '❌ خطأ في التشغيل';
                             
-                            // إيقاف التتر في حال الفشل التام
                             if (currentIndex === -3) {
-                                if(audio) { audio.pause(); audio.src = ''; }
+                                if(audio) { audio.pause(); audio.removeAttribute('src'); }
                                 currentIndex = -1;
                                 playingGroupId = null;
                                 isPlaying = false;
                                 window.updatePlayerUI();
                             }
-                        });
+                        }
                     }
                 }
             });
 
             audio.addEventListener('waiting', () => {
-                if (currentIndex !== -2) {
+                if (currentIndex !== -2 && currentIndex !== -4) {
                     const titleEl = document.getElementById('track-title');
                     if (titleEl) titleEl.innerText = '⏳ جاري التحضير...';
                 }
@@ -1008,7 +1020,7 @@
                         const nextIndex = index >= localQueue.length ? 0 : index;
                         window.playTrack(nextIndex);
                     } else {
-                        if(audio) { audio.pause(); audio.src = ''; }
+                        if(audio) { audio.pause(); audio.removeAttribute('src'); }
                         currentIndex = -1;
                         playingGroupId = null;
                         isPlaying = false;
@@ -1026,7 +1038,7 @@
             localQueue = [];
             localStorage.setItem('my_local_queue', JSON.stringify(localQueue));
             if (playingGroupId === 'local_queue') {
-                if(audio) { audio.pause(); audio.src = ''; }
+                if(audio) { audio.pause(); audio.removeAttribute('src'); }
                 currentIndex = -1;
                 playingGroupId = null;
                 isPlaying = false;
@@ -1044,7 +1056,7 @@
                 navigator.mediaSession.setActionHandler('play', () => {
                     if (audio && audio.paused) {
                         window.initAudioBooster();
-                        audio.play().catch(e => console.error(e));
+                        window.safePlayAudio();
                     }
                 });
                 navigator.mediaSession.setActionHandler('pause', () => {
@@ -1622,21 +1634,18 @@
         };
 
         let deferredPrompt;
-        // الاستماع لحدث التثبيت الرسمي من المتصفح
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
         });
 
         window.installApp = async () => {
-            // التحقق إذا كان التطبيق مثبتاً بالفعل
             if (window.matchMedia('(display-mode: standalone)').matches) {
                 window.openAlertModal('تنبيه', 'التطبيق مثبت بالفعل على هاتفك! ابحث عن أيقونة "راديو خالد" في قائمة تطبيقاتك.');
                 return;
             }
             
             if (deferredPrompt) {
-                // إظهار نافذة التثبيت الرسمية الخاصة بالمتصفح
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
@@ -1797,9 +1806,6 @@
             }
         };
 
-        // ==================
-        // Web Audio API
-        // ==================
         let audioCtx, gainNode, sourceNode, compressorNode, analyserNode;
 
         window.initAudioBooster = function() {
@@ -1879,9 +1885,6 @@
             }
         }
 
-        // ==================
-        // مصادقة Firebase والمزامنة
-        // ==================
         window.setCloudState = function(state, message) {
             const wrapper = document.getElementById('cloud-status-wrapper');
             if (wrapper) {
@@ -1922,19 +1925,19 @@
             }
         };
 
-        await initFirebaseAndAuth();
+        // انتظار تهيئة المصادقة أولاً لحل مشكلة الأذونات (Permissions) بشكل قاطع
+        initFirebaseAndAuth().then(() => {
+            onAuthStateChanged(auth, (currentUser) => {
+                user = currentUser;
+                if (!user) return; 
 
-        onAuthStateChanged(auth, (currentUser) => {
-            if (!currentUser) {
-                if (unsubMain) { unsubMain(); unsubMain = null; }
-                if (unsubStats) { unsubStats(); unsubStats = null; }
-                user = null;
-                signInAnonymously(auth).catch(console.error);
-                return;
-            }
+                window.applyAdminMode();
+                setupFirestoreListeners();
+            });
+        });
 
-            user = currentUser;
-            window.applyAdminMode();
+        function setupFirestoreListeners() {
+            if (!user) return;
 
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_playlist', 'main');
@@ -1960,7 +1963,6 @@
                             introTrack = data.introTrack;
                         }
 
-                        // تطبيق لون الصندوق من السحابة للجميع
                         if (data.playlistBgColor !== undefined) {
                             playlistBgColor = data.playlistBgColor;
                             const pbBox = document.getElementById('playlist-main-container');
@@ -1979,7 +1981,6 @@
 
                         window.applyAdminMode();
                         
-                        // التحقق من تتر البداية
                         if (introTrack && !introPlayed) {
                             sessionStorage.setItem('introPlayed', 'true');
                             introPlayed = true;
@@ -1989,24 +1990,25 @@
                             
                             window.safeChangeTrack(introTrack.audioUrl);
                             window.initAudioBooster();
+                            window.safePlayAudio();
                             
-                            if (audio) {
-                                const playPromise = audio.play();
-                                if (playPromise !== undefined) {
-                                    playPromise.catch(e => {
+                            const playPromise = audio.play();
+                            if (playPromise !== undefined) {
+                                playPromise.catch(e => {
+                                    if (e.name !== 'AbortError') {
                                         console.warn("المتصفح يمنع التشغيل التلقائي للصوت. سيتم تشغيل التتر عند أول تفاعل بالصفحة.");
                                         const playOnInteract = () => {
                                             if (currentIndex === -3) {
                                                 window.initAudioBooster();
-                                                audio.play().catch(err => console.error(err));
+                                                window.safePlayAudio();
                                             }
                                             document.removeEventListener('click', playOnInteract);
                                             document.removeEventListener('touchstart', playOnInteract);
                                         };
                                         document.addEventListener('click', playOnInteract);
                                         document.addEventListener('touchstart', playOnInteract);
-                                    });
-                                }
+                                    }
+                                });
                             }
                             window.updatePlayerUI();
                         }
@@ -2073,7 +2075,7 @@
             } catch(e) {
                 console.error(e);
             }
-        });
+        }
 
         window.saveToDB = async function() {
             if (!user) return;
@@ -2096,13 +2098,9 @@
             }
         };
 
-        // ==================
-        // وظائف السحب والإفلات
-        // ==================
         window.handleDragStart = (e, index) => {
             if (searchQuery) return; 
             const group = window.getViewingGroup();
-            // منع السحب إذا لم يكن المستخدم مديراً ولم تكن القائمة محلية
             if (!group || (!group.isLocal && !isAdmin)) return;
             
             draggedIndex = index;
@@ -2145,7 +2143,6 @@
             if (draggedIndex === -1 || draggedIndex === targetIndex) return;
 
             const group = window.getViewingGroup();
-            // منع الإفلات إذا لم يكن المستخدم مديراً ولم تكن القائمة محلية
             if (!group || (!group.isLocal && !isAdmin)) return;
 
             const tracks = group.tracks;
@@ -2250,9 +2247,6 @@
             }
         };
 
-        // ==================
-        // إدارة المجموعات والمقاطع
-        // ==================
         window.switchGroup = (groupId) => {
             viewingGroupId = groupId;
             isDropdownOpen = false; 
@@ -2331,7 +2325,7 @@
                 if (playingGroupId === groupId) {
                     if(audio) {
                         audio.pause();
-                        audio.src = '';
+                        audio.removeAttribute('src');
                     }
                     currentIndex = -1;
                     playingGroupId = null;
@@ -2369,7 +2363,7 @@
                     } else {
                         if(audio) {
                             audio.pause();
-                            audio.src = '';
+                            audio.removeAttribute('src');
                         }
                         currentIndex = -1;
                         playingGroupId = null;
@@ -2389,10 +2383,6 @@
             window.renderPlaylist();
             window.updateTickerUI();
         };
-
-        // ==================
-        // القائمة المنسدلة للأقسام
-        // ==================
 
         window.renderGroups = function() {
             if (!groups || groups.length === 0 || !groupsContainer) return;
@@ -2456,9 +2446,9 @@
             const currentPlayingGroup = window.getPlayingGroup();
             const playingTracks = currentPlayingGroup ? currentPlayingGroup.tracks : [];
             
-            if(btnPlayPause) btnPlayPause.disabled = (playingTracks.length === 0 && currentIndex === -1 && currentIndex !== -2 && currentIndex !== -3);
-            if(btnNext) btnNext.disabled = currentIndex === -2 || currentIndex === -3 || currentIndex >= playingTracks.length - 1 || playingTracks.length === 0;
-            if(btnPrev) btnPrev.disabled = currentIndex === -2 || currentIndex === -3 || currentIndex <= 0 || playingTracks.length === 0;
+            if(btnPlayPause) btnPlayPause.disabled = (playingTracks.length === 0 && currentIndex === -1 && currentIndex !== -2 && currentIndex !== -3 && currentIndex !== -4);
+            if(btnNext) btnNext.disabled = currentIndex === -2 || currentIndex === -3 || currentIndex === -4 || currentIndex >= playingTracks.length - 1 || playingTracks.length === 0;
+            if(btnPrev) btnPrev.disabled = currentIndex === -2 || currentIndex === -3 || currentIndex === -4 || currentIndex <= 0 || playingTracks.length === 0;
 
             let mediaTitle = 'راديو خالد';
             let mediaArtist = 'رحلة الى الزمن الجميل';
@@ -2485,8 +2475,28 @@
                 if (btnRestart) btnRestart.classList.add('hidden');
                 if (trackDetailsContainer) trackDetailsContainer.classList.add('hidden');
 
+            } else if (currentIndex === -4) {
+                mediaTitle = 'دراما ميكس';
+                mediaArtist = 'بث مباشر 🔴';
+                if(trackTitle) trackTitle.innerText = mediaTitle;
+                if(trackAuthor) trackAuthor.innerText = mediaArtist;
+                
+                if(playingGroupBadge) {
+                    playingGroupBadge.innerText = 'بث حي';
+                    playingGroupBadge.classList.remove('hidden');
+                }
+
+                if(trackCover) {
+                    trackCover.src = mediaArtwork; 
+                    trackCover.classList.remove('hidden');
+                }
+                if(defaultIcon) defaultIcon.classList.add('hidden');
+                
+                if (downloadContainer) downloadContainer.classList.add('hidden');
+                if (btnRestart) btnRestart.classList.add('hidden');
+                if (trackDetailsContainer) trackDetailsContainer.classList.add('hidden');
+
             } else if (currentIndex === -3 && introTrack) {
-                // حالة تتر البداية
                 mediaTitle = introTrack.title || 'هوية الإذاعة';
                 mediaArtist = introTrack.author || 'راديو خالد';
                 if(trackTitle) trackTitle.innerText = mediaTitle;
@@ -2573,6 +2583,9 @@
                     if (currentIndex === -2) {
                         coverContainer.classList.replace('border-pink-500', 'border-emerald-500');
                         coverContainer.classList.replace('shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'shadow-[0_0_30px_rgba(16,185,129,0.3)]');
+                    } else if (currentIndex === -4) {
+                        coverContainer.classList.replace('border-pink-500', 'border-purple-500');
+                        coverContainer.classList.replace('shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'shadow-[0_0_30px_rgba(168,85,247,0.3)]');
                     } else if (currentIndex === -3) {
                          coverContainer.classList.replace('border-pink-500', 'border-orange-500');
                          coverContainer.classList.replace('shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'shadow-[0_0_30px_rgba(249,115,22,0.3)]');
@@ -2585,7 +2598,7 @@
                 if(btnPlayPause) btnPlayPause.innerHTML = SVG_PAUSE;
             } else {
                 if(coverContainer) {
-                    coverContainer.classList.remove('border-pink-500', 'border-emerald-500', 'border-orange-500', 'shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'shadow-[0_0_30px_rgba(16,185,129,0.3)]', 'shadow-[0_0_30px_rgba(249,115,22,0.3)]', 'animate-spin-slow');
+                    coverContainer.classList.remove('border-pink-500', 'border-emerald-500', 'border-purple-500', 'border-orange-500', 'shadow-[0_0_30px_rgba(236,72,153,0.3)]', 'shadow-[0_0_30px_rgba(16,185,129,0.3)]', 'shadow-[0_0_30px_rgba(168,85,247,0.3)]', 'shadow-[0_0_30px_rgba(249,115,22,0.3)]', 'animate-spin-slow');
                     coverContainer.classList.add('border-gray-800');
                 }
                 if(defaultIcon) defaultIcon.classList.replace('text-cyan-400', 'text-gray-600');
@@ -2635,19 +2648,11 @@
             pendingRestoreTime = true;
             
             window.initAudioBooster();
-            
-            if(audio) {
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => {
-                        if (e.name !== 'AbortError') console.error("تم منع التشغيل التلقائي:", e);
-                    });
-                }
-            }
+            window.safePlayAudio();
             
             clearTimeout(audioLoadTimeout);
             audioLoadTimeout = setTimeout(() => {
-                if (audio && audio.paused && currentIndex !== -2 && currentIndex !== -3) {
+                if (audio && audio.paused && currentIndex !== -2 && currentIndex !== -3 && currentIndex !== -4) {
                     window.showToast('المقطع يستغرق وقتاً طويلاً. قد تكون هناك مشكلة بالرابط أو بالإنترنت. يرجى تحديث الصفحة.', 'error');
                     if(trackTitle) trackTitle.innerText = '⚠️ تأخر أو خطأ في التحميل';
                 }
@@ -2705,18 +2710,15 @@
             const listHtml = filteredTracksInfo.map(({ track, index }, arrayIndex) => {
                 const isActive = (playingGroupId === viewingGroup.id) && (currentIndex === index);
                 
-                // 1. كروت مستقلة بخلفيات داكنة صلبة لمنع تداخل الألوان مع خلفية الصندوق
                 const isEven = arrayIndex % 2 === 0;
                 const baseBgColor = isEven ? 'bg-[#1e1e1e]/95' : 'bg-[#151515]/95'; 
 
-                // 2. إبراز المقطع الفعال بحدود واضحة وتكبير بسيط، وباقي المقاطع ككروت منفصلة
                 const activeClasses = isActive 
                     ? 'bg-gradient-to-r from-pink-900/40 to-cyan-900/40 border border-pink-500/60 shadow-[0_0_20px_rgba(236,72,153,0.15)] ring-1 ring-pink-500/30' 
                     : `hover:bg-[#2a2a2a] border border-[#333] shadow-md ${baseBgColor} hover:border-[#555]`;
                     
                 const textClasses = isActive ? 'text-pink-300 font-extrabold' : 'text-gray-100 font-bold';
                 
-                // 3. تحويل الرقم إلى أيقونة تشغيل ذكية عند الوقوف بالماوس ليوضح إمكانية التشغيل
                 let iconHtml = `<span class="text-gray-500 text-sm group-hover:hidden">${index + 1}</span><i data-lucide="play" class="w-4 h-4 text-cyan-400 hidden group-hover:block ml-0.5"></i>`;
                 
                 if (isActive) {
@@ -2733,7 +2735,6 @@
                     }
                 }
 
-                // 4. إظهار علامة السحب فقط في القائمة الخاصة أو للمدير
                 const canDrag = !isSearching && (viewingGroup.isLocal || isAdmin);
                 const dragAttrs = canDrag ? `draggable="true" ondragstart="handleDragStart(event, ${index})" ondragend="handleDragEnd(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, ${index})"` : '';
                 const dragHandle = canDrag ? `<div class="cursor-grab text-gray-500 hover:text-white mr-1 ml-2 flex-shrink-0" title="اسحب للترتيب"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>` : '';
@@ -2766,7 +2767,6 @@
                     </button>
                 `;
 
-                // 5. مسافة mb-3 بين الكروت بدلاً من mb-2 لإعطاء مساحة للتنفس
                 return `
                     <div ${dragAttrs} onclick="playTrack(${index})" class="track-item group flex flex-col p-3 rounded-xl cursor-pointer transition-all ${activeClasses} mb-3">
                         <div class="flex items-start sm:items-center gap-3 w-full min-w-0">
@@ -2792,9 +2792,6 @@
             lucide.createIcons({ root: playlistContainer });
         };
 
-        // ==================
-        // إضافة الروابط مع التأكيد للروابط العادية
-        // ==================
         if (linkInput) {
             linkInput.addEventListener('input', (e) => {
                 if(btnSubmit) btnSubmit.disabled = e.target.value.trim() === '' || isLoading;
@@ -2890,16 +2887,13 @@
             }
         };
 
-        // ==================
-        // أحداث التحكم والمشغل
-        // ==================
         btnPlayPause?.addEventListener('click', () => {
-            if (currentIndex === -2 || currentIndex === -3) {
+            if (currentIndex === -2 || currentIndex === -3 || currentIndex === -4) {
                 if (isPlaying) {
                     if(audio) audio.pause();
                 } else {
                     window.initAudioBooster();
-                    if(audio) audio.play().catch(e => console.error(e));
+                    window.safePlayAudio();
                 }
                 return;
             }
@@ -2920,12 +2914,7 @@
                 if(audio) audio.pause();
             } else {
                 window.initAudioBooster();
-                if(audio) {
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(e => { if (e.name !== 'AbortError') console.error("خطأ:", e); });
-                    }
-                }
+                window.safePlayAudio();
             }
         });
 
@@ -2934,7 +2923,7 @@
             if (currentIndex === -3) {
                 if (!isPlaying) {
                     window.initAudioBooster();
-                    if(audio) audio.play().catch(e => { if (e.name !== 'AbortError') console.error(e); });
+                    window.safePlayAudio();
                 }
                 return;
             }
@@ -2944,14 +2933,13 @@
             }
             if (!isPlaying && currentGroup && currentGroup.tracks.length > 0) {
                 window.initAudioBooster();
-                if(audio) audio.play().catch(e => { if (e.name !== 'AbortError') console.error(e); });
+                window.safePlayAudio();
             }
         });
 
         btnNext?.addEventListener('click', () => {
             if (currentIndex === -3) {
-                // إيقاف التتر وعدم الانتقال التلقائي لأي مقطع
-                if(audio) { audio.pause(); audio.src = ''; }
+                if(audio) { audio.pause(); audio.removeAttribute('src'); }
                 currentIndex = -1;
                 playingGroupId = null;
                 isPlaying = false;
@@ -2996,7 +2984,7 @@
             audio.addEventListener('play', () => {
                 isPlaying = true;
                 
-                if (currentIndex !== -2 && currentIndex !== -3) {
+                if (currentIndex !== -2 && currentIndex !== -3 && currentIndex !== -4) {
                     const currentGroup = window.getPlayingGroup();
                     if (currentGroup && currentGroup.tracks[currentIndex] && !currentGroup.isLocal) {
                         const trackId = currentGroup.tracks[currentIndex].id;
@@ -3031,11 +3019,10 @@
             });
 
             audio.addEventListener('ended', () => {
-                if (currentIndex === -2) return; 
+                if (currentIndex === -2 || currentIndex === -4) return; 
                 
-                // الانتهاء من تتر البداية -> إيقاف التشغيل بناءً على طلبك
                 if (currentIndex === -3) {
-                    if(audio) { audio.pause(); audio.src = ''; }
+                    if(audio) { audio.pause(); audio.removeAttribute('src'); }
                     currentIndex = -1;
                     playingGroupId = null;
                     isPlaying = false;
@@ -3058,14 +3045,14 @@
             });
 
             audio.addEventListener('loadedmetadata', () => {
-                if (currentIndex === -2) {
+                if (currentIndex === -2 || currentIndex === -4) {
                     if(durationTxt) durationTxt.innerText = '🔴';
                     return;
                 }
                 
                 if(durationTxt) durationTxt.innerText = window.formatTime(audio.duration);
                 
-                if (currentIndex === -3) return; // لا نطبق التخطي أو استعادة الوقت على التتر
+                if (currentIndex === -3) return; 
                 
                 const currentGroup = window.getPlayingGroup();
                 if (pendingRestoreTime && currentGroup && currentGroup.tracks[currentIndex]) {
@@ -3083,7 +3070,7 @@
                 const current = audio.currentTime;
                 const duration = audio.duration || 0;
                 
-                if (currentIndex === -2) {
+                if (currentIndex === -2 || currentIndex === -4) {
                     if (!isDraggingProgress) {
                         if(currentTimeTxt) currentTimeTxt.innerText = 'بث مباشر';
                         if(progressBar) progressBar.style.width = '100%';
@@ -3096,7 +3083,7 @@
                     if(progressBar) progressBar.style.width = duration ? `${(current / duration) * 100}%` : '0%';
                 }
                 
-                if (currentIndex === -3) return; // لا نسجل وقت التتر
+                if (currentIndex === -3) return; 
 
                 const currentGroup = window.getPlayingGroup();
                 if (currentGroup && currentGroup.tracks[currentIndex] && duration > 0) {
@@ -3106,7 +3093,7 @@
         }
 
         window.updateProgressFromEvent = function(e) {
-            if (!audio || !audio.duration || !progressContainer) return;
+            if (!audio || !audio.duration || !progressContainer || currentIndex === -2 || currentIndex === -4) return;
             const rect = progressContainer.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const percentage = Math.max(0, Math.min(1, x / rect.width));
@@ -3118,11 +3105,13 @@
 
         if (progressContainer) {
             progressContainer.addEventListener('mousedown', (e) => {
+                if(currentIndex === -2 || currentIndex === -4) return;
                 isDraggingProgress = true;
                 window.updateProgressFromEvent(e);
             });
 
             progressContainer.addEventListener('touchstart', (e) => {
+                if(currentIndex === -2 || currentIndex === -4) return;
                 isDraggingProgress = true;
                 window.updateProgressFromEvent(e.touches[0]);
             }, { passive: false });
@@ -3144,7 +3133,6 @@
             isDraggingProgress = false;
         });
 
-        // التحكم بالصوت
         window.updateVolumeUI = function() {
             if (gainNode) gainNode.gain.value = volume;
             if(audio) audio.volume = Math.min(volume, 1);
@@ -3222,7 +3210,6 @@
             });
         }
         
-        // استدعاء التشغيل الأولي
         window.applyAdminMode();
 
     </script>
