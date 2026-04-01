@@ -34,8 +34,8 @@
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #333; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #555; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
         
         .custom-range::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -315,12 +315,16 @@
                     </form>
                     <p id="error-msg" class="text-red-400 text-sm mb-4 hidden"></p>
 
-                    <!-- أزرار التحكم بالصور ومن نحن ورسائل الزوار وتتر البداية -->
+                    <!-- أزرار التحكم بالصور ومن نحن ورسائل الزوار وتتر البداية و لون الخلفية -->
                     <div class="flex flex-col gap-3 border-t border-[#333] pt-4">
                         <div class="flex flex-wrap items-center gap-3">
                             <button onclick="setupIntroTrackPrompt()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-orange-400 border border-orange-500/30 rounded-xl hover:bg-orange-500/10 transition-colors flex items-center gap-2" title="إعداد المقطع الافتتاحي للموقع (يشتغل مرة واحدة عند فتح الموقع)">
                                 <i data-lucide="play-circle" class="w-4 h-4"></i>
                                 تتر البداية (هوية الإذاعة)
+                            </button>
+                            <button onclick="editPlaylistBgColor()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-rose-400 border border-rose-500/30 rounded-xl hover:bg-rose-500/10 transition-colors flex items-center gap-2" title="تغيير لون خلفية صندوق المقاطع">
+                                <i data-lucide="paint-bucket" class="w-4 h-4"></i>
+                                خلفية المقاطع
                             </button>
                             <button onclick="changeAdminPassword()" type="button" class="text-xs sm:text-sm px-4 py-2 bg-[#222] text-yellow-400 border border-yellow-500/30 rounded-xl hover:bg-yellow-500/10 transition-colors flex items-center gap-2" title="تغيير كلمة مرور الدخول للوحة">
                                 <i data-lucide="key" class="w-4 h-4"></i>
@@ -375,42 +379,43 @@
                     </div>
                 </div>
 
-                <div class="bg-[#1a1a1a] border border-[#333] rounded-2xl overflow-hidden flex flex-col h-[450px] lg:h-full lg:max-h-[650px]">
+                <!-- صندوق قائمة المقاطع القابل لتخصيص الخلفية -->
+                <div id="playlist-main-container" class="border border-[#333] rounded-2xl overflow-hidden flex flex-col h-[450px] lg:h-full lg:max-h-[650px] transition-colors duration-500 shadow-xl" style="background-color: #1a1a1a;">
                     
-                    <div class="p-4 border-b border-[#333] flex items-center justify-between bg-[#111] z-10 relative">
-                        <h3 class="font-semibold text-gray-200 flex items-center gap-2 flex-wrap">
+                    <div class="p-4 border-b border-black/20 flex items-center justify-between bg-black/40 backdrop-blur-md z-10 relative">
+                        <h3 class="font-semibold text-gray-100 flex items-center gap-2 flex-wrap text-shadow">
                             مقاطع المجموعة
                             <!-- منطقة حالة السحابة -->
-                            <div id="cloud-status-wrapper" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#222] border border-[#333]">
-                                <i data-lucide="cloud-off" class="w-4 h-4 text-gray-500"></i>
-                                <span class="text-[11px] font-mono text-gray-500">جاري الاتصال...</span>
+                            <div id="cloud-status-wrapper" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/50 border border-white/10">
+                                <i data-lucide="cloud-off" class="w-4 h-4 text-gray-400"></i>
+                                <span class="text-[11px] font-mono text-gray-400">جاري الاتصال...</span>
                             </div>
                         </h3>
-                        <span id="playlist-count" class="text-xs font-medium px-2 py-1 bg-[#222] text-cyan-400 rounded-md border border-[#333]">
+                        <span id="playlist-count" class="text-xs font-bold px-2 py-1 bg-black/50 text-white rounded-md border border-white/10 shadow-sm">
                             0 مقاطع
                         </span>
                     </div>
 
                     <!-- شريط الأقسام (القائمة المنسدلة الذكية) -->
-                    <div id="groups-container" class="flex items-center gap-3 p-4 bg-[#151515] border-b border-[#333] relative z-20">
+                    <div id="groups-container" class="flex items-center gap-3 p-4 bg-black/20 border-b border-black/20 relative z-20">
                         <!-- تُعرض القائمة المنسدلة هنا برمجياً -->
                     </div>
 
                     <!-- شريط البحث السريع والقائمة الخاصة المتطورة -->
-                    <div class="px-4 py-3 bg-[#111] border-b border-[#333] flex flex-col sm:flex-row gap-3 items-center">
+                    <div class="px-4 py-3 bg-black/40 border-b border-black/20 flex flex-col sm:flex-row gap-3 items-center backdrop-blur-md">
                         <div class="relative w-full sm:flex-1">
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <i data-lucide="search" class="w-4 h-4 text-gray-500"></i>
+                                <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
                             </div>
                             <input
                                 type="text"
                                 id="search-input"
                                 placeholder="ابحث عن مقطع..."
-                                class="block w-full pl-10 pr-10 py-2.5 bg-[#0a0a0a] border border-[#333] rounded-xl text-sm text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+                                class="block w-full pl-10 pr-10 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-gray-100 focus:ring-2 focus:ring-cyan-500 outline-none transition-all placeholder-gray-500"
                                 oninput="handleSearch(this.value)"
                             />
                         </div>
-                        <button onclick="switchGroup('local_queue')" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600/20 to-purple-600/20 text-pink-400 border border-pink-500/30 rounded-xl hover:from-pink-600/30 hover:to-purple-600/30 transition-all font-medium text-sm whitespace-nowrap shadow-sm" title="الاستماع للمقاطع التي أضفتها أنت">
+                        <button onclick="switchGroup('local_queue')" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-500/20 text-pink-300 border border-pink-500/30 rounded-xl hover:bg-pink-500/30 transition-all font-bold text-sm whitespace-nowrap shadow-sm backdrop-blur-sm" title="الاستماع للمقاطع التي أضفتها أنت">
                             <i data-lucide="list-music" class="w-4 h-4"></i>
                             قائمتي الخاصة
                         </button>
@@ -531,6 +536,8 @@
         let aboutUsText = ''; 
         let adminPassword = '2112'; 
         let autoSkipSeconds = 20; 
+        let playlistBgColor = '#1a1a1a'; // لون خلفية صندوق المقاطع الافتراضي
+
         let globalVisits = 0;
         let totalTracksPlayed = 0; 
         let globalTrackPlays = {}; 
@@ -804,6 +811,16 @@
                 }
             });
         };
+        
+        window.editPlaylistBgColor = function() {
+            window.openColorModal('تغيير لون خلفية صندوق المقاطع:', (newColor) => {
+                playlistBgColor = newColor;
+                const pbBox = document.getElementById('playlist-main-container');
+                if (pbBox) pbBox.style.backgroundColor = playlistBgColor;
+                window.saveToDB();
+                window.showToast('تم تغيير لون الخلفية وحفظه للجميع بنجاح', 'success');
+            }, playlistBgColor);
+        };
 
         // نظام التجديد التلقائي للروابط المنتهية
         window.autoRefreshTrack = async function(track, group, index) {
@@ -875,13 +892,13 @@
                             const titleEl = document.getElementById('track-title');
                             if (titleEl) titleEl.innerText = '❌ خطأ في التشغيل';
                             
-                            // تخطي التتر في حال الفشل التام
+                            // إيقاف التتر في حال الفشل التام
                             if (currentIndex === -3) {
-                                const mainGroup = groups.find(g => g.id === 'main') || groups[0];
-                                if (mainGroup && mainGroup.tracks.length > 0) {
-                                    playingGroupId = mainGroup.id;
-                                    window.playTrack(0);
-                                }
+                                if(audio) { audio.pause(); audio.src = ''; }
+                                currentIndex = -1;
+                                playingGroupId = null;
+                                isPlaying = false;
+                                window.updatePlayerUI();
                             }
                         });
                     }
@@ -1930,6 +1947,13 @@
                             introTrack = data.introTrack;
                         }
 
+                        // تطبيق لون الصندوق من السحابة للجميع
+                        if (data.playlistBgColor !== undefined) {
+                            playlistBgColor = data.playlistBgColor;
+                            const pbBox = document.getElementById('playlist-main-container');
+                            if (pbBox) pbBox.style.backgroundColor = playlistBgColor;
+                        }
+
                         if (data.groups) {
                             groups = data.groups;
                         } else if (data.tracks) {
@@ -2049,7 +2073,8 @@
                     aboutUsText: aboutUsText,
                     adminPassword: adminPassword,
                     autoSkipSeconds: autoSkipSeconds,
-                    introTrack: introTrack
+                    introTrack: introTrack,
+                    playlistBgColor: playlistBgColor
                 }, { merge: true });
                 window.setCloudState('success', 'تم الحفظ بنجاح');
             } catch (e) {
@@ -2360,7 +2385,7 @@
             const toggleBorderStyle = viewingGroup.color ? `border-color: ${viewingGroup.color}66;` : 'border-color: #333;';
             
             const toggleHtml = `
-                <button onclick="toggleDropdown(event)" class="w-full flex items-center justify-between bg-[#222] border ${toggleBorderStyle} text-white px-4 py-3 rounded-xl hover:bg-[#2a2a2a] transition-all focus:outline-none shadow-lg">
+                <button onclick="toggleDropdown(event)" class="w-full flex items-center justify-between bg-black/40 border ${toggleBorderStyle} text-white px-4 py-3 rounded-xl hover:bg-black/60 transition-all focus:outline-none shadow-lg backdrop-blur-sm">
                     <span class="flex items-center gap-2" style="${toggleColorStyle}">
                         <i data-lucide="${viewingGroup.isLocal ? 'list-music' : 'folder-open'}" class="w-5 h-5"></i>
                         <span class="font-bold text-base truncate">${viewingGroup.name}</span>
@@ -2369,13 +2394,16 @@
                 </button>
             `;
 
-            const menuItemsHtml = groups.map(g => {
+            const menuItemsHtml = groups.map((g, index) => {
+                const isEven = index % 2 === 0;
+                const baseBgColor = isEven ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.4)';
+
                 const activeStyle = g.color ? `background-color: ${g.color}22; border-right: 3px solid ${g.color}; color: #ffffff; text-shadow: 0 0 5px ${g.color}80;` : 'background-color: rgba(6, 182, 212, 0.1); border-right: 3px solid #06b6d4; color: white; text-shadow: 0 0 5px rgba(6,182,212,0.5);';
-                const inactiveStyle = g.color ? `color: ${g.color}; border-right: 3px solid transparent;` : 'color: #9ca3af; border-right: 3px solid transparent;';
+                const inactiveStyle = g.color ? `background-color: ${baseBgColor}; color: ${g.color}; border-right: 3px solid transparent;` : `background-color: ${baseBgColor}; color: #9ca3af; border-right: 3px solid transparent;`;
                 const appliedStyle = (g.id === viewingGroupId) ? activeStyle : inactiveStyle;
 
                 return `
-                <div class="flex items-center justify-between px-4 py-3 hover:bg-[#222] cursor-pointer border-b border-[#333] last:border-0 transition-colors" style="${appliedStyle}" onclick="switchGroup('${g.id}')">
+                <div class="flex items-center justify-between px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors backdrop-blur-md" style="${appliedStyle}" onclick="switchGroup('${g.id}')">
                     <span class="font-medium text-sm sm:text-base truncate flex-1 pl-2">${g.name}</span>
                     <div class="flex items-center gap-1">
                         ${isAdmin ? `<button onclick="editGroupColor(event, '${g.id}')" class="p-1.5 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors" title="تلوين القسم"><i data-lucide="palette" class="w-4 h-4"></i></button>` : ''}
@@ -2398,7 +2426,7 @@
                     ${dropdownMenuHtml}
                 </div>
                 ${isAdmin ? `
-                    <button onclick="addGroup()" class="flex-shrink-0 flex items-center justify-center w-[52px] h-[52px] rounded-xl bg-[#222] text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10 transition-colors shadow-lg" title="إضافة مجموعة جديدة">
+                    <button onclick="addGroup()" class="flex-shrink-0 flex items-center justify-center w-[52px] h-[52px] rounded-xl bg-black/40 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10 transition-colors shadow-lg backdrop-blur-sm" title="إضافة مجموعة جديدة">
                         <i data-lucide="plus" class="w-6 h-6"></i>
                     </button>
                 ` : ''}
@@ -2633,12 +2661,12 @@
             let extraHeaderHtml = '';
             if (viewingGroup.isLocal && !isSearching) {
                 extraHeaderHtml = `
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 px-3 py-4 bg-pink-500/5 rounded-xl border border-pink-500/20 gap-3 shadow-sm">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 px-3 py-4 bg-pink-500/10 rounded-xl border border-pink-500/20 gap-3 shadow-sm backdrop-blur-sm">
                         <div class="flex flex-col">
-                            <span class="text-sm text-pink-400 font-bold flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> قائمتي الخاصة</span>
-                            <span class="text-xs text-gray-400 mt-1">يتم حفظ هذه المقاطع في متصفحك الحالي فقط وتعمل بالترتيب التلقائي.</span>
+                            <span class="text-sm text-pink-300 font-bold flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> قائمتي الخاصة</span>
+                            <span class="text-xs text-gray-300 mt-1">يتم حفظ هذه المقاطع في متصفحك الحالي فقط وتعمل بالترتيب التلقائي.</span>
                         </div>
-                        <button onclick="clearQueue()" class="text-xs px-4 py-2.5 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2 font-medium w-full sm:w-auto shadow-sm">
+                        <button onclick="clearQueue()" class="text-xs px-4 py-2.5 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2 font-medium w-full sm:w-auto shadow-sm backdrop-blur-md">
                             <i data-lucide="trash-2" class="w-4 h-4"></i> مسح القائمة كاملة
                         </button>
                     </div>
@@ -2647,8 +2675,8 @@
 
             if (filteredTracksInfo.length === 0) {
                 playlistContainer.innerHTML = extraHeaderHtml + `
-                    <div class="h-full flex flex-col items-center justify-center text-gray-600 space-y-3 p-4 text-center mt-10">
-                        <i data-lucide="${isSearching ? 'search-x' : 'music'}" class="w-10 h-10 opacity-30"></i>
+                    <div class="h-full flex flex-col items-center justify-center text-white/50 space-y-3 p-4 text-center mt-10">
+                        <i data-lucide="${isSearching ? 'search-x' : 'music'}" class="w-10 h-10 opacity-50"></i>
                         <p>${isSearching ? 'لم يتم العثور على مقاطع مطابقة للبحث' : (viewingGroup.isLocal ? 'القائمة الخاصة بك فارغة حالياً. تصفح الأقسام واضغط على علامة ⨁ لإضافة مقاطع هنا.' : (isAdmin ? 'أضف روابط لتكوين مجموعة "' + viewingGroup.name + '"' : 'لا توجد مقاطع في هذه المجموعة حالياً'))}</p>
                     </div>
                 `;
@@ -2656,10 +2684,15 @@
                 return;
             }
 
-            const listHtml = filteredTracksInfo.map(({ track, index }) => {
+            const listHtml = filteredTracksInfo.map(({ track, index }, arrayIndex) => {
                 const isActive = (playingGroupId === viewingGroup.id) && (currentIndex === index);
-                const activeClasses = isActive ? 'bg-gradient-to-r from-cyan-500/10 to-pink-500/10 border border-pink-500/30' : 'hover:bg-[#222] border border-transparent';
-                const textClasses = isActive ? 'text-pink-100' : 'text-gray-200';
+                
+                // تدرج ألوان المقاطع (Zebra Striping) بحيث يكون مقطع غامق والآخر أفتح (باستخدام الشفافية ليتناسب مع الخلفية الملونة)
+                const isEven = arrayIndex % 2 === 0;
+                const defaultBgClasses = isEven ? 'bg-black/20' : 'bg-black/40';
+
+                const activeClasses = isActive ? 'bg-gradient-to-r from-cyan-500/20 to-pink-500/20 border border-pink-500/50' : `hover:bg-white/10 border border-transparent ${defaultBgClasses}`;
+                const textClasses = isActive ? 'text-pink-100' : 'text-gray-100';
                 
                 let iconHtml = index + 1;
                 if (isActive && isPlaying) {
@@ -2673,54 +2706,54 @@
                 }
 
                 const dragAttrs = (!isSearching) ? `draggable="true" ondragstart="handleDragStart(event, ${index})" ondragend="handleDragEnd(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, ${index})"` : '';
-                const dragHandle = (!isSearching) ? `<div class="cursor-grab text-gray-600 hover:text-gray-400 mr-1 ml-2 flex-shrink-0" title="سحب للإفلات"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>` : '';
+                const dragHandle = (!isSearching) ? `<div class="cursor-grab text-white/50 hover:text-white mr-1 ml-2 flex-shrink-0" title="سحب للإفلات"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>` : '';
 
                 // أزرار التحكم للأدمن
                 const adminControls = (isAdmin && !viewingGroup.isLocal) ? `
-                    <button onclick="moveTrackPrompt(event, ${index})" class="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors flex items-center gap-1.5" title="نقل المقطع لقسم آخر">
+                    <button onclick="moveTrackPrompt(event, ${index})" class="p-2 text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="نقل المقطع لقسم آخر">
                         <i data-lucide="arrow-right-left" class="w-4 h-4"></i><span class="text-xs font-medium">نقل</span>
                     </button>
-                    <button onclick="setTrackCoverUrl(event, ${index})" class="p-2 text-green-400 hover:text-green-300 hover:bg-green-400/10 rounded-lg transition-colors flex items-center gap-1.5" title="تغيير صورة المقطع">
+                    <button onclick="setTrackCoverUrl(event, ${index})" class="p-2 text-green-300 hover:text-green-100 hover:bg-green-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="تغيير صورة المقطع">
                         <i data-lucide="image" class="w-4 h-4"></i><span class="text-xs font-medium">صورة</span>
                     </button>
-                    <button onclick="editTrackDetails(event, ${index})" class="p-2 text-purple-400 hover:text-purple-300 hover:bg-purple-400/10 rounded-lg transition-colors flex items-center gap-1.5" title="إضافة/تعديل التفاصيل">
+                    <button onclick="editTrackDetails(event, ${index})" class="p-2 text-purple-300 hover:text-purple-100 hover:bg-purple-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="إضافة/تعديل التفاصيل">
                         <i data-lucide="file-text" class="w-4 h-4"></i><span class="text-xs font-medium">وصف</span>
                     </button>
-                    <button onclick="editTrack(event, ${index})" class="p-2 text-cyan-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors flex items-center gap-1.5" title="تعديل العنوان">
+                    <button onclick="editTrack(event, ${index})" class="p-2 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="تعديل العنوان">
                         <i data-lucide="edit-2" class="w-4 h-4"></i><span class="text-xs font-medium">تعديل</span>
                     </button>
-                    <button onclick="removeTrack(event, ${index})" class="p-2 text-gray-500 hover:text-pink-400 hover:bg-pink-400/10 rounded-lg transition-colors flex items-center gap-1.5" title="حذف المقطع من الراديو">
+                    <button onclick="removeTrack(event, ${index})" class="p-2 text-white/70 hover:text-pink-300 hover:bg-pink-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="حذف المقطع من الراديو">
                         <i data-lucide="trash-2" class="w-4 h-4"></i><span class="text-xs font-medium">حذف</span>
                     </button>
                 ` : '';
 
                 // زر الإضافة للقائمة أو الحذف منها
                 const queueButton = viewingGroup.isLocal ? `
-                    <button onclick="removeFromQueue(event, ${index})" class="p-2 text-red-400 hover:text-white hover:bg-red-500 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm" title="إزالة من قائمتي">
+                    <button onclick="removeFromQueue(event, ${index})" class="p-2 text-red-300 hover:text-white hover:bg-red-500/80 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm" title="إزالة من قائمتي">
                         <i data-lucide="minus-circle" class="w-4 h-4"></i><span class="text-xs font-medium">حذف من قائمتي</span>
                     </button>
                 ` : `
-                    <button onclick="addToQueue(event, '${track.id}')" class="p-2 text-pink-400 hover:text-white hover:bg-pink-500 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm" title="إضافة لقائمتي الخاصة">
+                    <button onclick="addToQueue(event, '${track.id}')" class="p-2 text-pink-300 hover:text-white hover:bg-pink-500/80 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm" title="إضافة لقائمتي الخاصة">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i><span class="text-xs font-medium">إضافة لقائمتي</span>
                     </button>
                 `;
 
                 // التصميم الرأسي الكامل (العنوان في سطر، والأزرار في سطر مستقل أسفله)
                 return `
-                    <div ${dragAttrs} onclick="playTrack(${index})" class="track-item group flex flex-col p-3 rounded-xl cursor-pointer transition-all bg-[#151515] ${activeClasses} mb-2 border border-[#222]">
+                    <div ${dragAttrs} onclick="playTrack(${index})" class="track-item group flex flex-col p-3 rounded-xl cursor-pointer transition-all ${activeClasses} mb-2 backdrop-blur-sm shadow-sm">
                         <div class="flex items-start sm:items-center gap-3 w-full min-w-0">
                             ${dragHandle}
-                            <div class="flex-shrink-0 w-8 text-center text-sm font-medium text-gray-500 flex items-center justify-center mt-1 sm:mt-0">
+                            <div class="flex-shrink-0 w-8 text-center text-sm font-bold text-white/70 flex items-center justify-center mt-1 sm:mt-0">
                                 ${iconHtml}
                             </div>
                             <div class="flex-1 min-w-0 flex flex-col">
-                                <p class="text-sm sm:text-base font-bold leading-relaxed break-words whitespace-normal ${textClasses}">${track.title}</p>
-                                <p class="text-xs text-cyan-500/70 truncate mt-1">@${track.author}</p>
+                                <p class="text-sm sm:text-base font-bold leading-relaxed break-words whitespace-normal ${textClasses} text-shadow-sm">${track.title}</p>
+                                <p class="text-xs text-cyan-300/80 truncate mt-1">@${track.author}</p>
                             </div>
                         </div>
-                        <div class="flex flex-wrap items-center justify-start gap-2 mt-3 pt-3 border-t border-[#333] w-full" onclick="event.stopPropagation()">
+                        <div class="flex flex-wrap items-center justify-start gap-2 mt-3 pt-3 border-t border-white/10 w-full" onclick="event.stopPropagation()">
                             ${queueButton}
-                            ${adminControls ? `<div class="h-4 w-px bg-[#333] mx-1"></div>` : ''}
+                            ${adminControls ? `<div class="h-4 w-px bg-white/20 mx-1"></div>` : ''}
                             ${adminControls}
                         </div>
                     </div>
@@ -2889,18 +2922,12 @@
 
         btnNext?.addEventListener('click', () => {
             if (currentIndex === -3) {
-                // تخطي تتر البداية
-                const mainGroup = groups.find(g => g.id === 'main') || groups[0];
-                if (mainGroup && mainGroup.tracks.length > 0) {
-                    viewingGroupId = mainGroup.id;
-                    window.playTrack(0);
-                } else {
-                    if(audio) { audio.pause(); audio.src = ''; }
-                    currentIndex = -1;
-                    playingGroupId = null;
-                    isPlaying = false;
-                    window.updatePlayerUI();
-                }
+                // إيقاف التتر وعدم الانتقال التلقائي لأي مقطع
+                if(audio) { audio.pause(); audio.src = ''; }
+                currentIndex = -1;
+                playingGroupId = null;
+                isPlaying = false;
+                window.updatePlayerUI();
                 return;
             }
             const currentGroup = window.getPlayingGroup();
@@ -2978,18 +3005,13 @@
             audio.addEventListener('ended', () => {
                 if (currentIndex === -2) return; 
                 
-                // الانتهاء من تتر البداية -> الدخول للمحطة الرئيسية
+                // الانتهاء من تتر البداية -> إيقاف التشغيل بناءً على طلبك
                 if (currentIndex === -3) {
-                    const mainGroup = groups.find(g => g.id === 'main') || groups[0];
-                    if (mainGroup && mainGroup.tracks.length > 0) {
-                        playingGroupId = mainGroup.id;
-                        window.playTrack(0);
-                    } else {
-                        currentIndex = -1;
-                        playingGroupId = null;
-                        isPlaying = false;
-                        window.updatePlayerUI();
-                    }
+                    if(audio) { audio.pause(); audio.src = ''; }
+                    currentIndex = -1;
+                    playingGroupId = null;
+                    isPlaying = false;
+                    window.updatePlayerUI();
                     return;
                 }
                 
