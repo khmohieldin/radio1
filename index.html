@@ -32,10 +32,23 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+        /* التعديل على السكرول ليصبح عريضاً وواضحاً ومميزاً */
+        .custom-scrollbar::-webkit-scrollbar { 
+            width: 10px; 
+            height: 10px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-track { 
+            background: rgba(0, 0, 0, 0.3); 
+            border-radius: 10px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, #ec4899, #06b6d4); 
+            border-radius: 10px; 
+            border: 2px solid #1a1a1a; /* لعمل حواف تفصل المقبض عن الخلفية */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+            background: linear-gradient(180deg, #db2777, #0891b2); 
+        }
         
         .custom-range::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -257,11 +270,11 @@
                             </button>
                         </div>
                         
-                        <!-- زر التحميل -->
-                        <div id="download-container" class="pt-4 border-t border-gray-800 w-full hidden">
-                            <button id="btn-download" class="flex items-center justify-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors py-2 mx-auto">
-                                <i data-lucide="download" class="w-4 h-4"></i>
-                                <span>تحميل مسار الصوت</span>
+                        <!-- زر التحميل بتصميم جديد ومختلف -->
+                        <div id="download-container" class="pt-5 mt-2 border-t border-gray-800 w-full hidden">
+                            <button id="btn-download" class="flex items-center justify-center gap-2 text-sm text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 transition-all py-3 px-6 rounded-xl mx-auto shadow-lg shadow-blue-500/20 font-bold border border-blue-400/30 w-[85%] hover:scale-105 active:scale-95">
+                                <i data-lucide="download" class="w-5 h-5"></i>
+                                <span>تحميل المقطع الصوتي الآن</span>
                             </button>
                         </div>
 
@@ -2727,14 +2740,14 @@
                     </button>
                 ` : '';
 
-                // زر الإضافة للقائمة أو الحذف منها
+                // تغيير زر الإضافة للقائمة بتصميم جديد ومميز
                 const queueButton = viewingGroup.isLocal ? `
-                    <button onclick="removeFromQueue(event, ${index})" class="p-2 text-red-300 hover:text-white hover:bg-red-500/80 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm" title="إزالة من قائمتي">
-                        <i data-lucide="minus-circle" class="w-4 h-4"></i><span class="text-xs font-medium">حذف من قائمتي</span>
+                    <button onclick="removeFromQueue(event, ${index})" class="px-3 py-1.5 text-white bg-red-500/80 hover:bg-red-500 rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-red-400/50" title="إزالة من قائمتي">
+                        <i data-lucide="minus-circle" class="w-4 h-4"></i><span class="text-xs font-bold">حذف من قائمتي</span>
                     </button>
                 ` : `
-                    <button onclick="addToQueue(event, '${track.id}')" class="p-2 text-pink-300 hover:text-white hover:bg-pink-500/80 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm" title="إضافة لقائمتي الخاصة">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i><span class="text-xs font-medium">إضافة لقائمتي</span>
+                    <button onclick="addToQueue(event, '${track.id}')" class="px-3 py-1.5 text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-indigo-400/50 transform hover:scale-105" title="إضافة لقائمتي الخاصة">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i><span class="text-xs font-bold">إضافة لقائمتي</span>
                     </button>
                 `;
 
