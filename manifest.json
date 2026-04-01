@@ -1,0 +1,59 @@
+{
+  "name": "راديو خالد",
+  "short_name": "راديو خالد",
+  "description": "رحلة إلى الزمن الجميل",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#ec4899",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
+**2. ملف `sw.js` (Service Worker)**
+هذا هو "المحرك المخفي" الذي يفرضه جوجل كروم كشرط أساسي لإظهار نافذة التثبيت الرسمية، كما أنه يساعد في تحميل التطبيق بسرعة.
+انسخ هذا الكود وضعه في ملف باسم `sw.js`:
+
+```javascript
+const CACHE_NAME = 'radio-khaled-v1';
+const urlsToCache = [
+    '/',
+    '/index.html',
+    '/manifest.json',
+    'https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png'
+];
+
+// تثبيت ملفات الكاش الأساسية
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(urlsToCache))
+    );
+    self.skipWaiting();
+});
+
+// تفعيل وتحديث الكاش
+self.addEventListener('activate', event => {
+    event.waitUntil(clients.claim());
+});
+
+// اعتراض الطلبات للعمل بسلاسة
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        fetch(event.request).catch(() => caches.match(event.request))
+    );
+});
+
+بمجرد رفع هذه الملفات الثلاثة (`index.html`, `manifest.json`, `sw.js`) معاً على استضافتك التي تدعم `https`، سيتعرف الهاتف تلقائياً على الموقع كتطبيق حقيقي وسيتمكن الزوار من تثبيته كبرنامج دائم على شاشاتهم!

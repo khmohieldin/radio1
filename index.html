@@ -11,36 +11,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="راديو خالد">
-    <link rel="manifest" id="manifest-link">
+    <link rel="manifest" href="manifest.json">
     
     <script>
-        // توليد ملف manifest برمجياً ليعمل التطبيق في ملف واحد
-        const manifestData = {
-            "name": "راديو خالد",
-            "short_name": "راديو خالد",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#111111",
-            "theme_color": "#ec4899",
-            "icons": [
-                {
-                    "src": "https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png",
-                    "sizes": "192x192",
-                    "type": "image/png",
-                    "purpose": "any maskable"
-                },
-                {
-                    "src": "https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png",
-                    "sizes": "512x512",
-                    "type": "image/png",
-                    "purpose": "any maskable"
-                }
-            ]
-        };
-        document.addEventListener('DOMContentLoaded', () => {
-            const manifestString = encodeURIComponent(JSON.stringify(manifestData));
-            document.getElementById('manifest-link').setAttribute('href', 'data:application/json;charset=utf-8,' + manifestString);
-        });
+        // تفعيل Service Worker الحقيقي للتطبيق من السيرفر
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.protocol === 'http:')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('تم تفعيل خدمة التطبيق (PWA) بنجاح'))
+                    .catch(err => console.error('خطأ في تفعيل خدمة التطبيق:', err));
+            });
+        } else {
+            console.log('ميزة Service Worker تعمل فقط عند رفع الموقع على استضافة حقيقية (http/https).');
+        }
     </script>
 
     <!-- تضمين مكتبة Tailwind CSS -->
