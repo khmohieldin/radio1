@@ -57,15 +57,6 @@
 </head>
 <body class="min-h-screen bg-[#111111] text-gray-100 font-sans selection:bg-pink-500/30 flex flex-col">
 
-    <!-- شاشة الترحيب لتشغيل تتر البداية (الهوية الصوتية) -->
-    <div id="intro-overlay" class="fixed inset-0 bg-[#0a0a0a] bg-opacity-95 z-[100] hidden flex-col items-center justify-center backdrop-blur-md transition-opacity duration-500">
-        <div class="w-32 h-32 rounded-full bg-gradient-to-tr from-cyan-400 to-pink-500 flex items-center justify-center mb-8 animate-pulse cursor-pointer shadow-[0_0_50px_rgba(236,72,153,0.6)] hover:scale-105 transition-transform" onclick="startIntro()">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white ml-2"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
-        </div>
-        <h2 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-pink-400 mb-3 text-center">مرحباً بك في راديو خالد</h2>
-        <p class="text-gray-400 text-lg">اضغط للبدء والاستماع للزمن الجميل</p>
-    </div>
-
     <!-- نافذة منبثقة (Modal) عامة -->
     <div id="modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity p-4">
         <div id="modal-content" class="bg-[#1a1a1a] border border-[#333] p-6 rounded-2xl w-full max-w-md shadow-2xl transform scale-100 transition-transform max-h-[90vh] flex flex-col">
@@ -550,30 +541,6 @@
                 }
             }
             window.updatePlayerUI();
-        };
-
-        // ==================
-        // وظائف تتر البداية (الهوية الصوتية)
-        // ==================
-        window.startIntro = function() {
-            const overlay = document.getElementById('intro-overlay');
-            if (overlay) overlay.classList.add('hidden');
-            
-            sessionStorage.setItem('introPlayed', 'true');
-            introPlayed = true;
-
-            if (introTrack && introTrack.audioUrl) {
-                playingGroupId = 'intro';
-                currentIndex = -3; // استخدام -3 كرمز لتشغيل التتر
-                
-                window.safeChangeTrack(introTrack.audioUrl);
-                window.initAudioBooster();
-                
-                if (audio) {
-                    audio.play().catch(e => console.error("تتر البداية: ", e));
-                }
-                window.updatePlayerUI();
-            }
         };
 
         // دالة سحب بيانات الروابط بشكل عام لاستخدامها في أكثر من مكان
@@ -1921,8 +1888,34 @@
                         
                         // التحقق من تتر البداية
                         if (introTrack && !introPlayed) {
-                            const overlay = document.getElementById('intro-overlay');
-                            if (overlay) overlay.classList.remove('hidden');
+                            sessionStorage.setItem('introPlayed', 'true');
+                            introPlayed = true;
+
+                            playingGroupId = 'intro';
+                            currentIndex = -3;
+                            
+                            window.safeChangeTrack(introTrack.audioUrl);
+                            window.initAudioBooster();
+                            
+                            if (audio) {
+                                const playPromise = audio.play();
+                                if (playPromise !== undefined) {
+                                    playPromise.catch(e => {
+                                        console.warn("المتصفح يمنع التشغيل التلقائي للصوت. سيتم تشغيل التتر عند أول تفاعل بالصفحة.");
+                                        const playOnInteract = () => {
+                                            if (currentIndex === -3) {
+                                                window.initAudioBooster();
+                                                audio.play().catch(err => console.error(err));
+                                            }
+                                            document.removeEventListener('click', playOnInteract);
+                                            document.removeEventListener('touchstart', playOnInteract);
+                                        };
+                                        document.addEventListener('click', playOnInteract);
+                                        document.addEventListener('touchstart', playOnInteract);
+                                    });
+                                }
+                            }
+                            window.updatePlayerUI();
                         }
                         else if (currentIndex === -1 && playingGroupId === null) {
                             const savedGroupId = localStorage.getItem('lastPlayingGroupId');
