@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>راديو خالد</title>
     
+    <!-- SEO & Social Media Meta Tags (Open Graph) -->
+    <meta name="description" content="راديو خالد - رحلة الى الزمن الجميل. استمع لأجمل المسلسلات والمقاطع الإذاعية.">
+    <meta property="og:title" content="راديو خالد">
+    <meta property="og:description" content="رحلة الى الزمن الجميل - استمع لأجمل المسلسلات والمقاطع الإذاعية">
+    <meta property="og:image" content="https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
     <!-- إعدادات PWA لتثبيت التطبيق بايقونة أصلية -->
     <meta name="theme-color" content="#ec4899">
     <link rel="apple-touch-icon" href="https://i.ibb.co/sp6xBm7K/Picsart-26-03-30-18-16-08-102.png">
@@ -14,15 +22,16 @@
     <link rel="manifest" href="manifest.json">
     
     <script>
-        // تفعيل Service Worker الحقيقي للتطبيق من السيرفر
-        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.protocol === 'http:')) {
+        // تفعيل Service Worker الحقيقي للتطبيق بطريقة احترافية وآمنة
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('تم تفعيل خدمة التطبيق (PWA) بنجاح'))
-                    .catch(err => console.error('خطأ في تفعيل خدمة التطبيق:', err));
+                // استخدام المسار الجذري لضمان عمل الـ SW على كل الصفحات
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('تم تفعيل خدمة التطبيق (PWA) بنجاح', reg.scope))
+                    .catch(err => console.warn('لم يتم العثور على ملف sw.js أو حدث خطأ:', err));
             });
         } else {
-            console.log('ميزة Service Worker تعمل فقط عند رفع الموقع على استضافة حقيقية (http/https).');
+            console.log('ميزة Service Worker تحتاج إلى اتصال آمن (HTTPS) أو بيئة تطوير محلي (localhost).');
         }
     </script>
 
@@ -30,7 +39,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- تضمين مكتبة أيقونات Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- مكتبة HLS.js لتشغيل ملفات m3u8 إذا تم استخدامها لاحقاً -->
+    <!-- مكتبة HLS.js لتشغيل ملفات m3u8 -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
     <style>
@@ -94,7 +103,7 @@
         .drag-over { border-color: #06b6d4 !important; background-color: rgba(6, 182, 212, 0.1) !important; }
         .dragging { opacity: 0.5; background-color: #222; }
 
-        /* إضافة خصائص الظل للنصوص (الإصلاح الثاني) */
+        /* خصائص الظل للنصوص */
         .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .text-shadow-sm { text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
     </style>
@@ -201,7 +210,7 @@
 
                         <div id="cover-container" class="w-40 h-40 rounded-full border-4 border-gray-800 flex items-center justify-center bg-black transition-all duration-500 overflow-hidden">
                             <i id="default-icon" data-lucide="music" class="w-12 h-12 text-gray-600"></i>
-                            <img id="track-cover" alt="Cover" class="hidden w-full h-full object-cover opacity-60" onerror="this.onerror=null; this.removeAttribute('src'); this.classList.add('hidden'); document.getElementById('default-icon').classList.remove('hidden');" />
+                            <img id="track-cover" alt="Cover" loading="lazy" class="hidden w-full h-full object-cover opacity-60" onerror="this.onerror=null; this.removeAttribute('src'); this.classList.add('hidden'); document.getElementById('default-icon').classList.remove('hidden');" />
                         </div>
 
                         <div class="w-full">
@@ -423,7 +432,19 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, collection, addDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // تضمين Firebase Analytics (التحسين الاحترافي للتتبع)
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 
+        // دالة تشفير كلمة المرور لحمايتها (SHA-256)
+        async function hashPassword(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // الحماية الحقيقية للمشروع تتم من خلال إعداد "Firestore Security Rules" من لوحة تحكم Firebase.
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyBnPCi3d1U_2IFd7uJfX2OJ50e6ZGpyXd0",
             authDomain: "caopy-6a424.firebaseapp.com",
@@ -437,6 +458,15 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        
+        // تفعيل الإحصائيات (Analytics)
+        let analytics;
+        try {
+            analytics = getAnalytics(app);
+        } catch(e) {
+            console.warn("تنبيه: لم يتم تفعيل Analytics", e);
+        }
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tiktok-radio-app';
 
         lucide.createIcons();
@@ -473,7 +503,11 @@
 
         let defaultCover = ''; 
         let aboutUsText = ''; 
-        let adminPassword = '2112'; 
+        
+        // تم استبدال كلمة المرور الصريحة (Plain Text) بالـ Hash الخاص بها للحماية.
+        // الـ Hash الافتراضي أدناه يمثل كلمة المرور القديمة '2112'.
+        let adminPasswordHash = 'f6392d475017045b85a3717dfb11de54fc911b2fc8d68dcb89bbdc77b311746f'; 
+        
         let autoSkipSeconds = 20; 
         let playlistBgColor = '#1a1a1a';
 
@@ -503,7 +537,6 @@
 
         const audio = document.getElementById('audio-player');
 
-        // إضافة الدالة المفقودة (الإصلاح الأول) لتشغيل وإخفاء الشاشة الترحيبية
         window.startIntro = () => {
             const introOverlay = document.getElementById('intro-overlay');
             if (introOverlay) {
@@ -524,7 +557,6 @@
             }
         };
 
-        // دالة تشغيل آمنة للتعامل مع الإلغاء المفاجئ من المتصفح
         window.safePlayAudio = function() {
             if (!audio) return;
             if (!audio.getAttribute('src') && !window.hlsPlayer && !audio.currentSrc) return;
@@ -545,16 +577,17 @@
                 audio.pause();
                 audio.removeAttribute('src'); 
                 
+                // منع memory leak عبر تنظيف مشغل HLS بشكل صحيح في كل مرة يتم تغيير المقطع
                 if(window.hlsPlayer) {
                     window.hlsPlayer.destroy();
                     window.hlsPlayer = null;
                 }
                 
-                // منع استدعاء load() إذا كان الرابط فارغ لتجنب خطأ No supported source was found
                 if (!newSrc || newSrc.trim() === '') {
                     return; 
                 }
                 
+                // الاعتماد على CORS إذا كان مدعوماً لكي يعمل محلل الطيف الصوتي (Visualizer)
                 audio.setAttribute('crossorigin', 'anonymous'); 
                 
                 if (newSrc.includes('.m3u8')) {
@@ -589,7 +622,6 @@
             window.updatePlayerUI();
         };
 
-        // نظام سحب واستخلاص البث المباشر من صفحة الخارجية (Scraping System)
         window.playDramaMixRadio = async () => {
             playingGroupId = null;
             currentIndex = -4; 
@@ -604,7 +636,6 @@
             window.updatePlayerUI();
 
             try {
-                // 1. جلب الكود المصدري للصفحة عبر خادم وسيط لتخطي حماية CORS
                 const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(pageUrl)}`;
                 const res = await fetch(proxyUrl);
                 const data = await res.json();
@@ -612,7 +643,6 @@
 
                 let streamUrl = null;
 
-                // 2. محاولة استخراج مسار الصوت باستخدام DOM Parser
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(htmlContent, 'text/html');
                 const audioEl = doc.querySelector('audio source') || doc.querySelector('audio');
@@ -620,7 +650,6 @@
                 if (audioEl && audioEl.src) {
                     streamUrl = audioEl.src;
                 } else {
-                    // 3. محاولة استخراج مسار الصوت بالبحث الذكي (Regex) في كل الأكواد (حتى لو كان مخفياً بداخل جافاسكريبت)
                     const broadRegex = /(https?:\/\/[^\s"'<>]+(?:\.m3u8|\.mp3|zeno\.fm|radiojar|stream|live|listen)[^\s"'<>]*)/i;
                     const match = htmlContent.match(broadRegex);
                     if (match && match[1]) {
@@ -628,13 +657,11 @@
                     }
                 }
 
-                // تنظيف الرابط في حال تم استخراج رابط نسبي
                 if (streamUrl && streamUrl.startsWith('/')) {
                     streamUrl = new URL(streamUrl, pageUrl).href;
                 }
 
                 if (streamUrl) {
-                    // تم العثور على الرابط، جاري التشغيل
                     window.safeChangeTrack(streamUrl);
                     pendingRestoreTime = false;
                     window.initAudioBooster();
@@ -929,11 +956,11 @@
                     }
 
                     if (audio.getAttribute('crossorigin')) {
+                        // إزالة خاصية crossorigin كحل أخير إذا كانت تسبب المشكلة بسبب سياسات الخوادم الخارجية
                         audio.removeAttribute('crossorigin');
                         const currentSrc = audio.src;
                         audio.removeAttribute('src');
                         
-                        // فقط نقوم بالتحميل إذا كان هناك مسار صالح لنتجنب خطأ Failed to load
                         if (currentSrc && currentSrc !== window.location.href) {
                             audio.src = currentSrc; 
                             audio.load();
@@ -1160,7 +1187,8 @@
             }
         };
 
-        window.submitAdminLogin = function() {
+        // تعديل عملية تسجيل الدخول لتعتمد على مقارنة الـ Hash المشفر
+        window.submitAdminLogin = async function() {
             const passwordEl = document.getElementById('admin-password');
             const password = passwordEl ? passwordEl.value.trim() : '';
 
@@ -1169,7 +1197,9 @@
                 return;
             }
 
-            if (password === adminPassword || password === '2112') { 
+            const inputHash = await hashPassword(password);
+
+            if (inputHash === adminPasswordHash) { 
                 isAdmin = true;
                 localStorage.setItem('radioAdmin', 'true'); 
                 window.showToast('تم تسجيل الدخول بنجاح', 'success');
@@ -1187,12 +1217,13 @@
             window.applyAdminMode();
         };
 
+        // تشفير الكلمة الجديدة قبل إرسالها وحفظها في قاعدة البيانات
         window.changeAdminPassword = function() {
-            window.openPromptModal('تغيير كلمة المرور:', 'أدخل كلمة المرور الجديدة...', (newPass) => {
+            window.openPromptModal('تغيير كلمة المرور:', 'أدخل كلمة المرور الجديدة...', async (newPass) => {
                 if(newPass.trim() !== '') {
-                    adminPassword = newPass.trim();
+                    adminPasswordHash = await hashPassword(newPass.trim());
                     window.saveToDB();
-                    window.showToast('تم تغيير كلمة المرور وحفظها في قاعدة البيانات', 'success');
+                    window.showToast('تم تغيير كلمة المرور وتشفيرها بنجاح', 'success');
                 }
             });
         };
@@ -1871,9 +1902,15 @@
             }
         };
 
-        function drawVisualizer() {
+        // تحسين الأداء (Throttling) لمحلل الطيف الصوتي (Visualizer) ليعمل بـ 30 إطار/ثانية
+        let lastDrawTime = performance.now();
+        function drawVisualizer(timestamp = performance.now()) {
             if (!analyserNode || !canvasCtx || !visualizerCanvas) return;
             animationId = requestAnimationFrame(drawVisualizer);
+
+            // Throttle: عدم الرسم إلا بعد مرور حوالي 33 ملي ثانية (يعادل 30 FPS) لتوفير البطارية والمعالج
+            if (timestamp - lastDrawTime < 33) return;
+            lastDrawTime = timestamp;
             
             const bufferLength = analyserNode.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
@@ -1976,8 +2013,12 @@
                             aboutUsText = data.aboutUsText;
                         }
                         
-                        if (data.adminPassword !== undefined) {
-                            adminPassword = data.adminPassword;
+                        // تحميل الـ Hash الخاص بكلمة المرور المشفرة من القاعدة 
+                        if (data.adminPasswordHash !== undefined) {
+                            adminPasswordHash = data.adminPasswordHash;
+                        } else if (data.adminPassword !== undefined) {
+                             // التوافقية القديمة
+                             hashPassword(data.adminPassword).then(h => adminPasswordHash = h);
                         }
                         
                         if (data.autoSkipSeconds !== undefined) {
@@ -2111,7 +2152,7 @@
                     groups: groups, 
                     defaultCover: defaultCover, 
                     aboutUsText: aboutUsText,
-                    adminPassword: adminPassword,
+                    adminPasswordHash: adminPasswordHash, 
                     autoSkipSeconds: autoSkipSeconds,
                     introTrack: introTrack,
                     playlistBgColor: playlistBgColor
