@@ -380,7 +380,7 @@
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
                             </div>
-                            <input type="text" id="search-input" placeholder="ابحث عن مقطع..." class="block w-full pl-10 pr-10 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-gray-100 focus:ring-2 focus:ring-cyan-500 outline-none transition-all placeholder-gray-500" oninput="handleSearch(this.value)" />
+                            <input type="text" id="search-input" placeholder="ابحث عن مقطع (يتم البحث في جميع الأقسام)..." class="block w-full pl-10 pr-10 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-gray-100 focus:ring-2 focus:ring-cyan-500 outline-none transition-all placeholder-gray-500" oninput="handleSearch(this.value)" />
                         </div>
                         <button onclick="switchGroup('local_queue')" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-500/20 text-pink-300 border border-pink-500/30 rounded-xl hover:bg-pink-500/30 transition-all font-bold text-sm whitespace-nowrap shadow-sm backdrop-blur-sm" title="الاستماع للمقاطع التي أضفتها أنت">
                             <i data-lucide="list-music" class="w-4 h-4"></i> قائمتي الخاصة
@@ -444,7 +444,6 @@
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // الحماية الحقيقية للمشروع تتم من خلال إعداد "Firestore Security Rules" من لوحة تحكم Firebase.
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyBnPCi3d1U_2IFd7uJfX2OJ50e6ZGpyXd0",
             authDomain: "caopy-6a424.firebaseapp.com",
@@ -459,7 +458,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // تفعيل الإحصائيات (Analytics)
         let analytics;
         try {
             analytics = getAnalytics(app);
@@ -504,8 +502,6 @@
         let defaultCover = ''; 
         let aboutUsText = ''; 
         
-        // تم استبدال كلمة المرور الصريحة (Plain Text) بالـ Hash الخاص بها للحماية.
-        // الـ Hash الافتراضي أدناه يمثل كلمة المرور القديمة ''.
         let adminPasswordHash = 'f6392d475017045b85a3717dfb11de54fc911b2fc8d68dcb89bbdc77b311746f'; 
         
         let autoSkipSeconds = 20; 
@@ -532,10 +528,16 @@
         let audioLoadTimeout; 
         
         let isDropdownOpen = false; 
-        let isAdmin = localStorage.getItem('radioAdmin') === 'true'; 
+        let isAdmin = localStorage.getItem('radioAdmin') === 'true' && sessionStorage.getItem('validAdminSession') === 'true'; 
         let searchQuery = '';
+        let isTabActive = !document.hidden;
 
         const audio = document.getElementById('audio-player');
+
+        // التعامل مع تنقل المستخدم بين التبويبات لتوفير البطارية
+        document.addEventListener("visibilitychange", () => {
+            isTabActive = !document.hidden;
+        });
 
         window.startIntro = () => {
             const introOverlay = document.getElementById('intro-overlay');
@@ -577,7 +579,6 @@
                 audio.pause();
                 audio.removeAttribute('src'); 
                 
-                // منع memory leak عبر تنظيف مشغل HLS بشكل صحيح في كل مرة يتم تغيير المقطع
                 if(window.hlsPlayer) {
                     window.hlsPlayer.destroy();
                     window.hlsPlayer = null;
@@ -587,7 +588,6 @@
                     return; 
                 }
                 
-                // الاعتماد على CORS إذا كان مدعوماً لكي يعمل محلل الطيف الصوتي (Visualizer)
                 audio.setAttribute('crossorigin', 'anonymous'); 
                 
                 if (newSrc.includes('.m3u8')) {
@@ -966,7 +966,7 @@
                             audio.load();
                             window.safePlayAudio();
                         } else {
-                            window.showToast('حدثت مشكلة في التشغيل', 'error');
+                            window.showToast('حدثت مشكلة في التشغيل. تم إيقاف المقطع', 'error');
                             const titleEl = document.getElementById('track-title');
                             if (titleEl) titleEl.innerText = '❌ خطأ في التشغيل';
                             
@@ -1132,7 +1132,9 @@
         window.applyAdminMode = function() {
             const adminControls = document.getElementById('admin-controls-wrapper');
             const badge = document.getElementById('admin-badge');
-            if (isAdmin) {
+            
+            // تحقق مزدوج (من الـ localStorage والـ sessionStorage المخصص للجلسة)
+            if (isAdmin && sessionStorage.getItem('validAdminSession') === 'true') {
                 if(adminControls) adminControls.classList.remove('hidden');
                 if(badge) badge.classList.remove('hidden');
                 const geminiInput = document.getElementById('gemini-api-key');
@@ -1187,7 +1189,7 @@
             }
         };
 
-        // تعديل عملية تسجيل الدخول لتعتمد على مقارنة الـ Hash المشفر
+        // تسجيل الدخول مع حفظ جلسة الـ sessionStorage للحماية
         window.submitAdminLogin = async function() {
             const passwordEl = document.getElementById('admin-password');
             const password = passwordEl ? passwordEl.value.trim() : '';
@@ -1202,6 +1204,7 @@
             if (inputHash === adminPasswordHash) { 
                 isAdmin = true;
                 localStorage.setItem('radioAdmin', 'true'); 
+                sessionStorage.setItem('validAdminSession', 'true'); // رمز جلسة لمنع التخطي اليدوي
                 window.showToast('تم تسجيل الدخول بنجاح', 'success');
                 window.applyAdminMode();
                 window.closeModal();
@@ -1213,6 +1216,7 @@
         window.lockAdmin = function() {
             isAdmin = false;
             localStorage.removeItem('radioAdmin');
+            sessionStorage.removeItem('validAdminSession'); // إزالة رمز الجلسة
             window.showToast('تم إغلاق غرفة التحكم', 'info');
             window.applyAdminMode();
         };
@@ -1248,7 +1252,7 @@
             clickCount++;
             clearTimeout(clickTimer);
             if (clickCount >= 5) {
-                if (!isAdmin) {
+                if (!isAdmin || sessionStorage.getItem('validAdminSession') !== 'true') {
                     window.openAdminLoginModal();
                 }
                 clickCount = 0;
@@ -1902,13 +1906,16 @@
             }
         };
 
-        // تحسين الأداء (Throttling) لمحلل الطيف الصوتي (Visualizer) ليعمل بـ 30 إطار/ثانية
+        // تحسين الأداء (Throttling) لمحلل الطيف الصوتي (Visualizer)
         let lastDrawTime = performance.now();
         function drawVisualizer(timestamp = performance.now()) {
             if (!analyserNode || !canvasCtx || !visualizerCanvas) return;
             animationId = requestAnimationFrame(drawVisualizer);
 
-            // Throttle: عدم الرسم إلا بعد مرور حوالي 33 ملي ثانية (يعادل 30 FPS) لتوفير البطارية والمعالج
+            // توفير البطارية: لا ترسم الـ visualizer إذا كان المستخدم في تبويبة أخرى
+            if (!isTabActive) return;
+
+            // Throttle: رسم بمعدل ~30 إطار/ثانية
             if (timestamp - lastDrawTime < 33) return;
             lastDrawTime = timestamp;
             
@@ -1987,7 +1994,6 @@
             }
         };
 
-        // انتظار تهيئة المصادقة أولاً لحل مشكلة الأذونات (Permissions) بشكل قاطع
         initFirebaseAndAuth().then(() => {
             onAuthStateChanged(auth, (currentUser) => {
                 user = currentUser;
@@ -2013,11 +2019,9 @@
                             aboutUsText = data.aboutUsText;
                         }
                         
-                        // تحميل الـ Hash الخاص بكلمة المرور المشفرة من القاعدة 
                         if (data.adminPasswordHash !== undefined) {
                             adminPasswordHash = data.adminPasswordHash;
                         } else if (data.adminPassword !== undefined) {
-                             // التوافقية القديمة
                              hashPassword(data.adminPassword).then(h => adminPasswordHash = h);
                         }
                         
@@ -2145,6 +2149,14 @@
 
         window.saveToDB = async function() {
             if (!user) return;
+            
+            // تحقق أمني: إذا تمكن شخص من تفعيل الإدارة بشكل وهمي، الجلسة ستمنعه من الحفظ
+            if (isAdmin && sessionStorage.getItem('validAdminSession') !== 'true') {
+                 window.showToast("جلسة الإدارة غير صالحة! يرجى تسجيل الدخول مجدداً.", "error");
+                 window.lockAdmin();
+                 return;
+            }
+
             try {
                 window.setCloudState('connecting', 'جاري الاتصال...');
                 const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_playlist', 'main');
@@ -2241,6 +2253,7 @@
 
         window.moveTrackPrompt = (e, index) => {
             e.stopPropagation();
+            if (searchQuery) return; // منع النقل أثناء البحث لتجنب أخطاء الفهرس
             const currentGroup = window.getViewingGroup();
             if(!currentGroup || !currentGroup.tracks[index] || currentGroup.isLocal) return;
 
@@ -2316,6 +2329,12 @@
         window.switchGroup = (groupId) => {
             viewingGroupId = groupId;
             isDropdownOpen = false; 
+            
+            // إعادة ضبط البحث عند تبديل الأقسام
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.value = '';
+            searchQuery = '';
+            
             window.renderGroups();
             window.renderPlaylist();
         };
@@ -2357,6 +2376,7 @@
 
         window.editTrack = (e, index) => {
             e.stopPropagation();
+            if (searchQuery) return; // منع التعديل أثناء البحث
             const group = window.getViewingGroup();
             if(!group || !group.tracks[index] || group.isLocal) return;
             window.openPromptModal('تعديل عنوان المقطع:', 'أدخل العنوان الجديد', (newTitle) => {
@@ -2369,6 +2389,7 @@
 
         window.editTrackDetails = (e, index) => {
             e.stopPropagation();
+            if (searchQuery) return; // منع التعديل أثناء البحث
             const group = window.getViewingGroup();
             if(!group || !group.tracks[index] || group.isLocal) return;
             window.openDetailsModal('تفاصيل ومعلومات المقطع', group.tracks[index].title, (newDetails) => {
@@ -2410,6 +2431,7 @@
 
         window.removeTrack = (e, index) => {
             e.stopPropagation();
+            if (searchQuery) return; // منع الحذف أثناء البحث
             
             const viewingGroup = window.getViewingGroup();
             if (!viewingGroup || viewingGroup.isLocal) return;
@@ -2727,24 +2749,43 @@
             window.updatePlayerUI();
         };
 
+        // دالة عرض المقاطع المحسنة للبحث الشامل
         window.renderPlaylist = function() {
             const viewingGroup = window.getViewingGroup();
             if (!viewingGroup || !playlistContainer) return;
 
-            let tracks = viewingGroup.tracks;
-            
+            let filteredTracksInfo = [];
             const isSearching = searchQuery.trim() !== '';
-            let filteredTracksInfo = tracks.map((track, index) => ({ track, index }));
-            
+
             if (isSearching) {
                 const q = searchQuery.toLowerCase();
-                filteredTracksInfo = filteredTracksInfo.filter(item => 
-                    item.track.title.toLowerCase().includes(q) || 
-                    item.track.author.toLowerCase().includes(q)
-                );
-                if(playlistCount) playlistCount.innerText = `${filteredTracksInfo.length} من ${tracks.length}`;
+                if (viewingGroup.isLocal) {
+                    // بحث داخل القائمة الخاصة فقط
+                    filteredTracksInfo = viewingGroup.tracks
+                        .map((track, index) => ({ track, index, groupId: 'local_queue', groupName: 'قائمتي الخاصة' }))
+                        .filter(item => item.track.title.toLowerCase().includes(q) || item.track.author.toLowerCase().includes(q));
+                } else {
+                    // بحث شامل في جميع أقسام قاعدة البيانات
+                    groups.forEach(g => {
+                        g.tracks.forEach((track, index) => {
+                            if (track.title.toLowerCase().includes(q) || track.author.toLowerCase().includes(q)) {
+                                filteredTracksInfo.push({ track, index, groupId: g.id, groupName: g.name });
+                            }
+                        });
+                    });
+                }
             } else {
-                if(playlistCount) playlistCount.innerText = `${tracks.length} مقاطع`;
+                // عرض عادي للقسم المحدد
+                filteredTracksInfo = viewingGroup.tracks.map((track, index) => ({ track, index, groupId: viewingGroup.id, groupName: viewingGroup.name }));
+            }
+
+            if(playlistCount) {
+                if (isSearching && !viewingGroup.isLocal) {
+                    const totalDBTracks = groups.reduce((acc, g) => acc + g.tracks.length, 0);
+                    playlistCount.innerText = `${filteredTracksInfo.length} من ${totalDBTracks} (بحث شامل)`;
+                } else {
+                    playlistCount.innerText = `${filteredTracksInfo.length} من ${viewingGroup.tracks.length}`;
+                }
             }
 
             let extraHeaderHtml = '';
@@ -2773,8 +2814,8 @@
                 return;
             }
 
-            const listHtml = filteredTracksInfo.map(({ track, index }, arrayIndex) => {
-                const isActive = (playingGroupId === viewingGroup.id) && (currentIndex === index);
+            const listHtml = filteredTracksInfo.map(({ track, index, groupId, groupName }, arrayIndex) => {
+                const isActive = (playingGroupId === groupId) && (currentIndex === index);
                 
                 const isEven = arrayIndex % 2 === 0;
                 const baseBgColor = isEven ? 'bg-[#1e1e1e]/95' : 'bg-[#151515]/95'; 
@@ -2785,7 +2826,7 @@
                     
                 const textClasses = isActive ? 'text-pink-300 font-extrabold' : 'text-gray-100 font-bold';
                 
-                let iconHtml = `<span class="text-gray-500 text-sm group-hover:hidden">${index + 1}</span><i data-lucide="play" class="w-4 h-4 text-cyan-400 hidden group-hover:block ml-0.5"></i>`;
+                let iconHtml = `<span class="text-gray-500 text-sm group-hover:hidden">${arrayIndex + 1}</span><i data-lucide="play" class="w-4 h-4 text-cyan-400 hidden group-hover:block ml-0.5"></i>`;
                 
                 if (isActive) {
                     if (isPlaying) {
@@ -2801,53 +2842,66 @@
                     }
                 }
 
+                // منع السحب والإفلات وتعديل الأزرار أثناء البحث لتجنب الفساد في الفهرس
                 const canDrag = !isSearching && (viewingGroup.isLocal || isAdmin);
                 const dragAttrs = canDrag ? `draggable="true" ondragstart="handleDragStart(event, ${index})" ondragend="handleDragEnd(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, ${index})"` : '';
                 const dragHandle = canDrag ? `<div class="cursor-grab text-gray-500 hover:text-white mr-1 ml-2 flex-shrink-0" title="اسحب للترتيب"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>` : '';
 
-                const adminControls = (isAdmin && !viewingGroup.isLocal) ? `
-                    <button onclick="moveTrackPrompt(event, ${index})" class="p-2 text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="نقل المقطع لقسم آخر">
-                        <i data-lucide="arrow-right-left" class="w-4 h-4"></i><span class="text-xs font-medium">نقل</span>
-                    </button>
-                    <button onclick="setTrackCoverUrl(event, ${index})" class="p-2 text-green-300 hover:text-green-100 hover:bg-green-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="تغيير صورة المقطع">
-                        <i data-lucide="image" class="w-4 h-4"></i><span class="text-xs font-medium">صورة</span>
-                    </button>
-                    <button onclick="editTrackDetails(event, ${index})" class="p-2 text-purple-300 hover:text-purple-100 hover:bg-purple-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="إضافة/تعديل التفاصيل">
-                        <i data-lucide="file-text" class="w-4 h-4"></i><span class="text-xs font-medium">وصف</span>
-                    </button>
-                    <button onclick="editTrack(event, ${index})" class="p-2 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="تعديل العنوان">
-                        <i data-lucide="edit-2" class="w-4 h-4"></i><span class="text-xs font-medium">تعديل</span>
-                    </button>
-                    <button onclick="removeTrack(event, ${index})" class="p-2 text-white/70 hover:text-pink-300 hover:bg-pink-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="حذف المقطع من الراديو">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i><span class="text-xs font-medium">حذف</span>
-                    </button>
-                ` : '';
+                // أزرار الإدمن يتم إخفاؤها في وضع البحث لتفادي مسح مقاطع بالخطأ من أقسام أخرى
+                let adminControls = '';
+                if (isAdmin && !viewingGroup.isLocal) {
+                    if (isSearching) {
+                        adminControls = `<span class="text-xs text-gray-500 mr-2 flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> الإدارة معطلة أثناء البحث</span>`;
+                    } else {
+                        adminControls = `
+                            <button onclick="moveTrackPrompt(event, ${index})" class="p-2 text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="نقل المقطع لقسم آخر">
+                                <i data-lucide="arrow-right-left" class="w-4 h-4"></i><span class="text-xs font-medium">نقل</span>
+                            </button>
+                            <button onclick="setTrackCoverUrl(event, ${index})" class="p-2 text-green-300 hover:text-green-100 hover:bg-green-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="تغيير صورة المقطع">
+                                <i data-lucide="image" class="w-4 h-4"></i><span class="text-xs font-medium">صورة</span>
+                            </button>
+                            <button onclick="editTrackDetails(event, ${index})" class="p-2 text-purple-300 hover:text-purple-100 hover:bg-purple-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="إضافة/تعديل التفاصيل">
+                                <i data-lucide="file-text" class="w-4 h-4"></i><span class="text-xs font-medium">وصف</span>
+                            </button>
+                            <button onclick="editTrack(event, ${index})" class="p-2 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="تعديل العنوان">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i><span class="text-xs font-medium">تعديل</span>
+                            </button>
+                            <button onclick="removeTrack(event, ${index})" class="p-2 text-white/70 hover:text-pink-300 hover:bg-pink-500/20 rounded-lg transition-colors flex items-center gap-1.5" title="حذف المقطع من الراديو">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i><span class="text-xs font-medium">حذف</span>
+                            </button>
+                        `;
+                    }
+                }
 
-                const queueButton = viewingGroup.isLocal ? `
+                const queueButton = (groupId === 'local_queue') ? `
                     <button onclick="removeFromQueue(event, ${index})" class="px-3 py-1.5 text-white bg-red-500/80 hover:bg-red-500 rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-red-400/50" title="إزالة من قائمتي">
-                        <i data-lucide="minus-circle" class="w-4 h-4"></i><span class="text-xs font-bold">حذف من قائمتي</span>
+                        <i data-lucide="minus-circle" class="w-4 h-4"></i><span class="text-xs font-bold">حذف</span>
                     </button>
                 ` : `
                     <button onclick="addToQueue(event, '${track.id}')" class="px-3 py-1.5 text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-indigo-400/50 transform hover:scale-105" title="إضافة لقائمتي الخاصة">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i><span class="text-xs font-bold">إضافة لقائمتي</span>
                     </button>
                 `;
+                
+                const groupBadgeHtml = isSearching ? `<span class="bg-blue-500/10 text-blue-300 text-[10px] px-1.5 py-0.5 rounded border border-blue-500/20 whitespace-nowrap ml-2 hidden sm:inline-block">${groupName}</span>` : '';
 
                 return `
-                    <div ${dragAttrs} onclick="playTrack(${index})" class="track-item group flex flex-col p-3 rounded-xl cursor-pointer transition-all ${activeClasses} mb-3">
+                    <div ${dragAttrs} onclick="playSpecificTrack('${groupId}', ${index})" class="track-item group flex flex-col p-3 rounded-xl cursor-pointer transition-all ${activeClasses} mb-3">
                         <div class="flex items-start sm:items-center gap-3 w-full min-w-0">
                             ${dragHandle}
                             <div class="flex-shrink-0 w-8 text-center font-bold text-white/70 flex items-center justify-center mt-1 sm:mt-0">
                                 ${iconHtml}
                             </div>
                             <div class="flex-1 min-w-0 flex flex-col">
-                                <p class="text-sm sm:text-base font-bold leading-relaxed break-words whitespace-normal ${textClasses} text-shadow-sm">${track.title}</p>
+                                <p class="text-sm sm:text-base font-bold leading-relaxed break-words whitespace-normal ${textClasses} text-shadow-sm flex items-center flex-wrap">
+                                    ${track.title} ${groupBadgeHtml}
+                                </p>
                                 <p class="text-xs text-cyan-300/80 truncate mt-1">@${track.author}</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center justify-start gap-2 mt-3 pt-3 border-t border-white/10 w-full" onclick="event.stopPropagation()">
                             ${queueButton}
-                            ${adminControls ? `<div class="h-4 w-px bg-white/20 mx-1"></div>` : ''}
+                            ${adminControls && !isSearching ? `<div class="h-4 w-px bg-white/20 mx-1"></div>` : ''}
                             ${adminControls}
                         </div>
                     </div>
