@@ -1,0 +1,63 @@
+/* التعديل على السكرول ليصبح عريضاً وواضحاً ومميزاً */
+.custom-scrollbar::-webkit-scrollbar { 
+    width: 10px; 
+    height: 10px; 
+}
+.custom-scrollbar::-webkit-scrollbar-track { 
+    background: rgba(0, 0, 0, 0.3); 
+    border-radius: 10px; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: linear-gradient(180deg, #ec4899, #06b6d4); 
+    border-radius: 10px; 
+    border: 2px solid #1a1a1a; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+    background: linear-gradient(180deg, #db2777, #0891b2); 
+}
+
+/* سكرول أزرار الإذاعات العلوية */
+.radio-buttons-scroll::-webkit-scrollbar { height: 4px; }
+.radio-buttons-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+.radio-buttons-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+.radio-buttons-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
+
+.custom-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #ec4899;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+  transition: transform 0.1s;
+}
+.custom-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+@keyframes spin-slow { 100% { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin-slow 10s linear infinite; }
+
+@keyframes scroll-ltr {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100vw); }
+}
+.animate-scroll-ltr {
+    display: inline-block;
+    white-space: nowrap;
+    animation: scroll-ltr 30s linear infinite;
+    will-change: transform;
+}
+.animate-scroll-ltr:hover { animation-play-state: paused; }
+
+@media all and (display-mode: standalone) {
+    .install-btn-container { display: none !important; }
+}
+
+.drag-over { border-color: #06b6d4 !important; background-color: rgba(6, 182, 212, 0.1) !important; }
+.dragging { opacity: 0.5; background-color: #222; }
+
+/* خصائص الظل للنصوص */
+.text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.text-shadow-sm { text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
