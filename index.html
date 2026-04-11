@@ -108,15 +108,6 @@
     <div class="fixed top-[-10%] right-[-10%] w-[50rem] h-[50rem] rounded-full bg-blue-900/40 blur-[120px] pointer-events-none z-0"></div>
     <div class="fixed bottom-[-20%] left-[-10%] w-[60rem] h-[60rem] rounded-full bg-purple-900/30 blur-[150px] pointer-events-none z-0"></div>
 
-    <div id="splash-screen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050814] text-white transition-opacity duration-700">
-        <div class="relative w-24 h-24 mb-6">
-            <div class="absolute inset-0 border-4 border-blue-900/50 rounded-full"></div>
-            <div class="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" style="animation-duration: 1s;"></div>
-            <div class="absolute inset-0 flex items-center justify-center text-blue-400 font-black text-xl">وظفني</div>
-        </div>
-        <h2 class="text-2xl font-black text-white mb-2 animate-pulse">جاري التحميل...</h2>
-    </div>
-
     <!-- UI Container -->
     <div id="app" class="relative z-10 min-h-screen flex flex-col"></div>
 
@@ -219,19 +210,40 @@
             if (JobAppState.secretClickCount >= 5) { JobAppState.secretClickCount = 0; JobAppState.modals.login = true; JobApp.render(); }
         });
 
+        // --- Firebase Initial Seeder ---
+        async function seedDefaultsAndCount() {
+            if (isFileProtocol || !db) return;
+            try {
+                const settingsRef = doc(db, 'settings', 'global');
+                const settingsSnap = await getDoc(settingsRef);
+                
+                if(!settingsSnap.exists()) {
+                    await setDoc(settingsRef, JobAppState.siteSettings);
+                } else {
+                    await updateDoc(settingsRef, { visitorsCount: increment(1) });
+                }
+
+                const adminsSnap = await getDocs(collection(db, 'systemAdmins'));
+                if(adminsSnap.empty) {
+                    await addDoc(collection(db, 'systemAdmins'), JobAppState.systemAdmins[0]);
+                }
+                const fieldsSnap = await getDocs(collection(db, 'formFields'));
+                if(fieldsSnap.empty || fieldsSnap.size < 15) {
+                    for(let f of fullDefaultFields) {
+                        await setDoc(doc(db, 'formFields', f.id), f);
+                    }
+                }
+            } catch (e) { console.log("Seeding skipped", e); }
+        }
+
         // --- Core Framework ---
         window.JobApp = {
             renderTimer: null,
             init: async function() {
-                this.syncSession(); 
-                this.render(); 
-
-                const removeSplash = () => {
-                    const splash = document.getElementById('splash-screen');
-                    if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 700); }
-                };
-
                 try {
+                    this.syncSession(); 
+                    this.render(); // العرض المباشر والسريع للواجهة بدون انتظار أي شاشات تحميل
+
                     if (isFileProtocol) throw new Error("PROTOCOL_ERROR");
 
                     const fbInitTask = async () => {
@@ -263,8 +275,6 @@
                     onSnapshot(collection(db, 'ads'), snap => { JobAppState.ads = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>b.id - a.id); this.render(); });
                     onSnapshot(collection(db, 'messages'), snap => { JobAppState.messages = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>b.id - a.id); this.render(); });
 
-                    removeSplash();
-
                 } catch(e) {
                     console.warn("تم تفعيل وضع التخزين المحلي (Offline Mode).");
                     JobAppState.isOffline = true;
@@ -280,7 +290,6 @@
                     
                     this.syncSession(); 
                     this.render(); 
-                    removeSplash();
                 }
             },
             
@@ -362,7 +371,7 @@
                 downloadImage(imgSrc) {
                     const a = document.createElement('a');
                     a.href = imgSrc;
-                    a.download = 'صورة_مرفقة.png';
+                    a.download = 'صورة_مرفقة.png'; // الاسم الافتراضي
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -1225,7 +1234,7 @@
                                 </div>
                                 <div class="w-full sm:w-auto">
                                     ${req.isRated ? 
-                                        `<span class="text-emerald-400 text-xs font-bold flex items-center justify-center sm:justify-start gap-1 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20 w-full sm:w-auto"><i data-lucide="check-circle" class="w-3 h-3 sm:w-4 sm:h-4"></i> قيمته بـ ${req.ratingGiven} نجوم</span>` : 
+                                        `<span class="text-emerald-400 text-xs font-bold flex items-center justify-center sm:justify-start gap-1 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 w-full sm:w-auto"><i data-lucide="check-circle" class="w-3 h-3 sm:w-4 sm:h-4"></i> قيمته بـ ${req.ratingGiven} نجوم</span>` : 
                                         `<button type="button" onclick="JobApp.actions.openRatingModal('${req.id}')" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-lg w-full sm:w-auto"><i data-lucide="star" class="w-3 h-3 sm:w-4 sm:h-4"></i> تقييم الموظف</button>`
                                     }
                                 </div>
