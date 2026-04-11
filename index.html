@@ -108,6 +108,15 @@
     <div class="fixed top-[-10%] right-[-10%] w-[50rem] h-[50rem] rounded-full bg-blue-900/40 blur-[120px] pointer-events-none z-0"></div>
     <div class="fixed bottom-[-20%] left-[-10%] w-[60rem] h-[60rem] rounded-full bg-purple-900/30 blur-[150px] pointer-events-none z-0"></div>
 
+    <div id="splash-screen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050814] text-white transition-opacity duration-700">
+        <div class="relative w-24 h-24 mb-6">
+            <div class="absolute inset-0 border-4 border-blue-900/50 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" style="animation-duration: 1s;"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-blue-400 font-black text-xl">وظفني</div>
+        </div>
+        <h2 class="text-2xl font-black text-white mb-2 animate-pulse">جاري التحميل...</h2>
+    </div>
+
     <!-- UI Container -->
     <div id="app" class="relative z-10 min-h-screen flex flex-col"></div>
 
@@ -131,10 +140,12 @@
         let app, db, auth;
 
         if (!isFileProtocol) {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            window.db = db;
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                window.db = db;
+            } catch(e) { console.error("Firebase init failed", e); }
         }
 
         const fullDefaultFields = [
@@ -184,118 +195,65 @@
             
             siteSettings: {
                 name: 'منصة توظيف المصرية لخدمات الموارد البشرية وظفنى.كوم _ wzfny.com', 
-                logo: '', 
-                adminName: 'خالد محي الدين', 
-                adminRole: 'مدير الموقع', 
-                adminPhone: '01144800777', 
-                adminEmail: 'khmohieldin@gmail.com', 
-                aboutUs: 'منصة وظفني هي المنصة الأولى من نوعها...', 
-                seekerPortalImg: '', 
-                employerPortalImg: '', 
-                tickerEnabled: true, 
-                tickerSpeed: 30, 
-                tickerMode: 'auto', 
-                tickerManualText: '',
-                visitorsCount: 1500 
+                logo: '', adminName: 'خالد محي الدين', adminRole: 'مدير الموقع', adminPhone: '01144800777', adminEmail: 'khmohieldin@gmail.com', aboutUs: 'منصة وظفني هي المنصة الأولى من نوعها...', seekerPortalImg: '', employerPortalImg: '', tickerEnabled: true, tickerSpeed: 30, tickerMode: 'auto', tickerManualText: '', visitorsCount: 1500 
             },
             
-            secretClickCount: 0,
-            loggedInAdmin: null,
-            adminRecoveryMode: false,
-            loggedInUser: null,
-            preRegData: { role: 'seeker' }, 
-            
-            tempSeekerImage: '',
-            tempIdImage: '',
-            tempCertImage: '',
-            tempAdImage: '',
-            tempRating: 0,
-            lastSubmittedSeeker: null, 
+            secretClickCount: 0, loggedInAdmin: null, adminRecoveryMode: false, loggedInUser: null, preRegData: { role: 'seeker' }, 
+            tempSeekerImage: '', tempIdImage: '', tempCertImage: '', tempAdImage: '', tempRating: 0, lastSubmittedSeeker: null, 
+            adFormType: 'external', adminAddUserRole: 'seeker', 
+            modals: { login: false, request: false, rating: false, adDetails: false, adminRequestDetails: null, userDetails: null, adminAddUser: false, bulkAdd: false, employerSeekerDetails: null, imageViewer: null, editField: null },
+            selectedItem: null, search: { term: '', filterJob: 'الكل', filterExp: 'الكل' }, adminTab: 'system_admins', usersSubTab: 'seekers', employerSeekersViewMode: 'cards',
 
-            adFormType: 'external',
-            adminAddUserRole: 'seeker', 
-            modals: { 
-                login: false, 
-                request: false, 
-                rating: false, 
-                adDetails: false, 
-                adminRequestDetails: null, 
-                userDetails: null, 
-                adminAddUser: false, 
-                bulkAdd: false,
-                employerSeekerDetails: null,
-                imageViewer: null,
-                editField: null // لحفظ بيانات الحقل المراد تعديله
-            },
-            selectedItem: null, 
-            search: { term: '', filterJob: 'الكل', filterExp: 'الكل' },
-            adminTab: 'system_admins',
-            usersSubTab: 'seekers',
-            employerSeekersViewMode: 'cards',
-
-            // Data Arrays
             systemAdmins: [{ id: 'admin_owner', name: 'خالد محي الدين', role: 'الدعم الفنى (المالك)', email: 'khmohieldin@gmail.com', phone: '01144800777', password: '123456', type: 'super_admin', profileImage: '', color: 'green' }],
-            messages: [], 
-            formFields: [...fullDefaultFields], 
-            seekers: [],
-            employers: [],
-            requests: [],
-            ads: []
+            messages: [], formFields: [...fullDefaultFields], seekers: [], employers: [], requests: [], ads: []
         };
 
-        // --- Global Secret Click Listener ---
         window.secretClickTimer = null;
         document.addEventListener('click', function(e) {
             if (JobAppState.modals.login || JobAppState.loggedInAdmin) return;
             const isInteractive = e.target.closest('button, a, input, select, textarea, label, [onclick]');
             if (isInteractive) return;
-
             JobAppState.secretClickCount++;
             clearTimeout(window.secretClickTimer);
             window.secretClickTimer = setTimeout(function() { JobAppState.secretClickCount = 0; }, 3000);
-
-            if (JobAppState.secretClickCount >= 5) {
-                JobAppState.secretClickCount = 0;
-                JobAppState.modals.login = true;
-                JobApp.render();
-            }
+            if (JobAppState.secretClickCount >= 5) { JobAppState.secretClickCount = 0; JobAppState.modals.login = true; JobApp.render(); }
         });
-
-        // --- Firebase Initial Seeder ---
-        async function seedDefaultsAndCount() {
-            if (isFileProtocol || !db) return;
-            try {
-                const settingsRef = doc(db, 'settings', 'global');
-                const settingsSnap = await getDoc(settingsRef);
-                
-                if(!settingsSnap.exists()) {
-                    await setDoc(settingsRef, JobAppState.siteSettings);
-                } else {
-                    await updateDoc(settingsRef, { visitorsCount: increment(1) });
-                }
-
-                const adminsSnap = await getDocs(collection(db, 'systemAdmins'));
-                if(adminsSnap.empty) {
-                    await addDoc(collection(db, 'systemAdmins'), JobAppState.systemAdmins[0]);
-                }
-                const fieldsSnap = await getDocs(collection(db, 'formFields'));
-                if(fieldsSnap.empty || fieldsSnap.size < 15) {
-                    for(let f of fullDefaultFields) {
-                        await setDoc(doc(db, 'formFields', f.id), f);
-                    }
-                }
-            } catch (e) { console.log("Seeding skipped", e); }
-        }
 
         // --- Core Framework ---
         window.JobApp = {
             renderTimer: null,
             init: async function() {
+                this.syncSession(); 
+                this.render(); 
+
+                const removeSplash = () => {
+                    const splash = document.getElementById('splash-screen');
+                    if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 700); }
+                };
+
                 try {
                     if (isFileProtocol) throw new Error("PROTOCOL_ERROR");
-                    await signInAnonymously(auth);
-                    await seedDefaultsAndCount();
+
+                    const fbInitTask = async () => {
+                        await signInAnonymously(auth);
+                        const settingsRef = doc(db, 'settings', 'global');
+                        const settingsSnap = await getDoc(settingsRef);
+                        if(!settingsSnap.exists()) await setDoc(settingsRef, JobAppState.siteSettings);
+                        else await updateDoc(settingsRef, { visitorsCount: increment(1) });
+
+                        const adminsSnap = await getDocs(collection(db, 'systemAdmins'));
+                        if(adminsSnap.empty) await addDoc(collection(db, 'systemAdmins'), JobAppState.systemAdmins[0]);
+                        
+                        const fieldsSnap = await getDocs(collection(db, 'formFields'));
+                        if(fieldsSnap.empty || fieldsSnap.size < 15) {
+                            for(let f of fullDefaultFields) await setDoc(doc(db, 'formFields', f.id), f);
+                        }
+                    };
+
+                    const timeoutTask = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 4000));
                     
+                    await Promise.race([fbInitTask(), timeoutTask]);
+
                     onSnapshot(doc(db, 'settings', 'global'), doc => { if(doc.exists()) { JobAppState.siteSettings = doc.data(); this.syncSession(); this.render(); }});
                     onSnapshot(collection(db, 'systemAdmins'), snap => { JobAppState.systemAdmins = snap.docs.map(d => ({id: d.id, ...d.data()})); this.syncSession(); this.render(); });
                     onSnapshot(collection(db, 'formFields'), snap => { JobAppState.formFields = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => parseInt(a.id.replace('f', '')) - parseInt(b.id.replace('f', ''))); this.render(); });
@@ -305,11 +263,13 @@
                     onSnapshot(collection(db, 'ads'), snap => { JobAppState.ads = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>b.id - a.id); this.render(); });
                     onSnapshot(collection(db, 'messages'), snap => { JobAppState.messages = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>b.id - a.id); this.render(); });
 
+                    removeSplash();
+
                 } catch(e) {
+                    console.warn("تم تفعيل وضع التخزين المحلي (Offline Mode).");
                     JobAppState.isOffline = true;
                     JobAppState.siteSettings.visitorsCount++; 
                     
-                    // نظام التخزين المحلي لضمان عدم ضياع البيانات
                     ['seekers', 'employers', 'requests', 'ads', 'messages', 'systemAdmins', 'formFields'].forEach(col => {
                         const stored = localStorage.getItem('wzafny_' + col);
                         if(stored) JobAppState[col] = JSON.parse(stored);
@@ -320,6 +280,7 @@
                     
                     this.syncSession(); 
                     this.render(); 
+                    removeSplash();
                 }
             },
             
@@ -401,7 +362,7 @@
                 downloadImage(imgSrc) {
                     const a = document.createElement('a');
                     a.href = imgSrc;
-                    a.download = 'صورة_مرفقة.png'; // الاسم الافتراضي
+                    a.download = 'صورة_مرفقة.png';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -655,8 +616,30 @@
                 },
                 async saveSiteSettings(e) {
                     e.preventDefault();
-                    JobAppState.siteSettings.name = e.target.siteName.value; JobAppState.siteSettings.adminName = e.target.adminName.value; JobAppState.siteSettings.adminRole = e.target.adminRole.value; JobAppState.siteSettings.adminPhone = e.target.adminPhone.value; JobAppState.siteSettings.adminEmail = e.target.adminEmail.value; JobAppState.siteSettings.aboutUs = e.target.aboutUs.value; JobAppState.siteSettings.tickerEnabled = e.target.tickerEnabled.value === 'true'; JobAppState.siteSettings.tickerSpeed = parseInt(e.target.tickerSpeed.value) || 30; JobAppState.siteSettings.tickerMode = e.target.tickerMode.value; JobAppState.siteSettings.tickerManualText = e.target.tickerManualText.value;
-                    try { if (!JobAppState.isOffline) await setDoc(doc(db, 'settings', 'global'), JobAppState.siteSettings); alert('تم الحفظ بنجاح!'); } catch(err){}
+                    
+                    // استخدام البرمجة الدفاعية لحماية الدالة من الأعطال في حال اختفاء أو عدم وجود حقل
+                    JobAppState.siteSettings.name = e.target.siteName ? e.target.siteName.value : JobAppState.siteSettings.name; 
+                    JobAppState.siteSettings.adminName = e.target.adminName ? e.target.adminName.value : JobAppState.siteSettings.adminName; 
+                    JobAppState.siteSettings.adminRole = e.target.adminRole ? e.target.adminRole.value : JobAppState.siteSettings.adminRole; 
+                    JobAppState.siteSettings.adminPhone = e.target.adminPhone ? e.target.adminPhone.value : JobAppState.siteSettings.adminPhone; 
+                    JobAppState.siteSettings.adminEmail = e.target.adminEmail ? e.target.adminEmail.value : JobAppState.siteSettings.adminEmail; 
+                    JobAppState.siteSettings.aboutUs = e.target.aboutUs ? e.target.aboutUs.value : JobAppState.siteSettings.aboutUs; 
+                    JobAppState.siteSettings.tickerEnabled = e.target.tickerEnabled ? e.target.tickerEnabled.value === 'true' : JobAppState.siteSettings.tickerEnabled; 
+                    JobAppState.siteSettings.tickerSpeed = e.target.tickerSpeed ? parseInt(e.target.tickerSpeed.value) || 30 : JobAppState.siteSettings.tickerSpeed; 
+                    JobAppState.siteSettings.tickerMode = e.target.tickerMode ? e.target.tickerMode.value : JobAppState.siteSettings.tickerMode; 
+                    JobAppState.siteSettings.tickerManualText = e.target.tickerManualText ? e.target.tickerManualText.value : JobAppState.siteSettings.tickerManualText;
+                    
+                    try { 
+                        if (!JobAppState.isOffline) {
+                            await setDoc(doc(db, 'settings', 'global'), JobAppState.siteSettings); 
+                        } else {
+                            saveLocal('settings', JobAppState.siteSettings);
+                        }
+                        alert('تم الحفظ بنجاح!'); 
+                    } catch(err){
+                        alert("خطأ أثناء الحفظ: " + err.message);
+                    }
+                    JobApp.render();
                 },
                 async handleBulkAdd(e) {
                     e.preventDefault();
@@ -812,15 +795,15 @@
                         <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 md:h-20">
                             <div class="flex items-center gap-3 cursor-pointer" onclick="JobApp.actions.secretClick()">${logoHtml}<h1 class="text-xl font-black text-white hidden sm:block">وظفنى.كوم</h1></div>
                             <nav class="hidden lg:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10">${navButtons}</nav>
-                            <div class="flex items-center gap-2 shrink-0">
+                            <div class="flex items-center gap-2">
                                 ${user ? `
-                                    <button onclick="JobApp.navigate('${user.role === 'employer' ? 'employer_profile' : 'seeker_profile'}')" class="text-amber-300 bg-amber-500/10 px-3 py-2 rounded-xl font-bold text-xs md:text-sm flex items-center gap-1"><i data-lucide="user" class="w-4 h-4"></i><span class="hidden sm:inline">حسابي</span></button>
-                                    <button onclick="JobApp.actions.userLogout()" class="text-rose-400 bg-rose-500/10 px-3 py-2 rounded-xl text-xs md:text-sm flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i><span class="hidden sm:inline">خروج</span></button>
+                                    <button onclick="JobApp.navigate('${user.role === 'employer' ? 'employer_profile' : 'seeker_profile'}')" class="text-amber-300 bg-amber-500/10 px-3 py-2 rounded-xl font-bold text-xs md:text-sm"><i data-lucide="user" class="inline w-4 h-4"></i> حسابي</button>
+                                    <button onclick="JobApp.actions.userLogout()" class="text-rose-400 bg-rose-500/10 px-3 py-2 rounded-xl text-xs md:text-sm"><i data-lucide="log-out" class="inline w-4 h-4"></i> خروج</button>
                                 ` : `
-                                    <button onclick="JobAppState.modals.userLogin = true; JobApp.render()" class="text-blue-300 bg-blue-600/20 px-3 py-2 sm:px-4 sm:py-2 rounded-xl font-bold text-xs sm:text-sm">دخول</button>
-                                    <button onclick="JobApp.actions.startAuth('register', 'seeker')" class="text-cyan-300 bg-cyan-600/20 px-3 py-2 sm:px-4 sm:py-2 rounded-xl font-bold text-xs sm:text-sm">حساب جديد</button>
+                                    <button onclick="JobAppState.modals.userLogin = true; JobApp.render()" class="text-blue-300 bg-blue-600/20 px-4 py-2 rounded-xl font-bold text-sm">دخول</button>
+                                    <button onclick="JobApp.actions.startAuth('register', 'seeker')" class="text-cyan-300 bg-cyan-600/20 px-4 py-2 rounded-xl font-bold text-sm">حساب جديد</button>
                                 `}
-                                ${JobAppState.loggedInAdmin ? `<button onclick="JobApp.navigate('admin_dashboard')" class="text-emerald-400 bg-emerald-500/10 px-2 py-2 sm:px-3 sm:py-2 rounded-xl font-bold"><i data-lucide="shield-check" class="w-4 h-4 sm:w-5 sm:h-5"></i></button>` : ''}
+                                ${JobAppState.loggedInAdmin ? `<button onclick="JobApp.navigate('admin_dashboard')" class="text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-xl font-bold"><i data-lucide="shield-check" class="w-5 h-5"></i></button>` : ''}
                                 <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="lg:hidden flex items-center justify-center text-white bg-white/5 p-2 rounded-xl border border-white/10"><i data-lucide="menu" class="w-5 h-5"></i></button>
                             </div>
                         </div>
@@ -832,6 +815,7 @@
                 Modals() {
                     let html = '';
                     
+                    // عارض الصور المكبرة
                     if (JobAppState.modals.imageViewer) {
                         html += `
                         <div class="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm fade-in" onclick="JobApp.actions.closeImageViewer()">
@@ -844,6 +828,7 @@
                         `;
                     }
 
+                    // السيرة الذاتية (سؤال وجواب) للشركات
                     if (JobAppState.modals.employerSeekerDetails) {
                         const seeker = JobAppState.modals.employerSeekerDetails;
                         const contactFields = ['f7', 'f8', 'f9', 'f9_name', 'f10', 'f11', 'f31'];
@@ -1188,7 +1173,7 @@
                                 </label>
                             </div>
                             ${sectionsHtml}
-                            <div class="sticky bottom-4 z-40 pt-4 px-2 sm:px-0"><button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold py-4 sm:py-5 rounded-2xl shadow-[0_0_20px_rgba(56,189,248,0.5)] text-lg sm:text-xl hover:scale-[1.01] transition-transform">تأكيد وحفظ الاستمارة</button></div>
+                            <div class="sticky bottom-4 z-40 pt-4 px-2 sm:px-0"><button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold py-4 sm:py-5 rounded-2xl shadow-[0_0_20px_rgba(56,189,248,0.5)] text-lg sm:text-xl hover:scale-[1.01] transition-transform">تأكيد وحفظ الاستمارة (وتفعيل الظهور للشركات)</button></div>
                         </form>
                     </div>`;
                 },
@@ -1443,7 +1428,7 @@
                     
                     if (JobAppState.adminTab === 'system_admins') {
                         tabContent = `
-                        <div class="glass-panel p-4 sm:p-6 rounded-2xl mb-6 overflow-x-auto border border-white/10 hide-scrollbar">
+                        <div class="glass-panel p-4 sm:p-6 rounded-2xl mb-6 overflow-x-auto hide-scrollbar">
                             <h3 class="text-lg sm:text-xl font-bold text-emerald-400 mb-4">المدراء الحاليين</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 min-w-[280px]">
                                 ${JobAppState.systemAdmins.map(a => `
@@ -1481,9 +1466,9 @@
                             <h3 class="text-xl sm:text-2xl font-black text-white mb-4 sm:mb-6 border-b border-white/10 pb-4"><i data-lucide="settings" class="inline w-5 h-5 sm:w-6 sm:h-6 text-slate-400 mr-2"></i> إعدادات المنصة الأساسية</h3>
                             <form onsubmit="JobApp.actions.saveSiteSettings(event)" class="space-y-4 sm:space-y-6" autocomplete="off">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                    <div><label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1 sm:mb-2">اسم المنصة بالكامل</label><input name="siteName" value="${JobAppState.siteSettings.name}" class="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-black/30 border border-white/10 text-white outline-none text-sm sm:text-base" required></div>
-                                    <div><label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1 sm:mb-2">هاتف الإدارة الأساسي</label><input name="adminPhone" value="${JobAppState.siteSettings.adminPhone}" type="tel" class="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-black/30 border border-emerald-500/30 text-emerald-100 outline-none text-left text-sm sm:text-base" dir="ltr" required></div>
-                                    <div class="sm:col-span-2"><label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1 sm:mb-2">نص "من نحن"</label><textarea name="aboutUs" required rows="5" class="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-black/30 border border-white/10 text-white outline-none resize-y text-sm sm:text-base">${JobAppState.siteSettings.aboutUs}</textarea></div>
+                                    <div><label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1 sm:mb-2">اسم المنصة بالكامل</label><input name="siteName" value="${JobAppState.siteSettings.name || ''}" class="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-black/30 border border-white/10 text-white outline-none text-sm sm:text-base" required></div>
+                                    <div><label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1 sm:mb-2">هاتف الإدارة الأساسي</label><input name="adminPhone" value="${JobAppState.siteSettings.adminPhone || ''}" type="tel" class="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-black/30 border border-emerald-500/30 text-emerald-100 outline-none text-left text-sm sm:text-base" dir="ltr" required></div>
+                                    <div class="sm:col-span-2"><label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1 sm:mb-2">نص "من نحن"</label><textarea name="aboutUs" required rows="5" class="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-black/30 border border-white/10 text-white outline-none resize-y text-sm sm:text-base">${JobAppState.siteSettings.aboutUs || ''}</textarea></div>
                                 </div>
                                 <div class="flex justify-center mt-6 sm:mt-8">
                                     <button type="submit" class="w-full md:w-1/2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black py-3 sm:py-4 px-8 rounded-xl text-base sm:text-lg flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4 sm:w-5 sm:h-5"></i> حفظ الإعدادات الأساسية</button>
