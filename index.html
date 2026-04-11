@@ -464,7 +464,7 @@
                     }
 
                     if (role === 'seeker') {
-                        const newSeeker = { name, email, password, phone: '', profileImage: '', idImage: '', certImage: '', isVisible: false, isHired: false, rating: 0, reviewsCount: 0, jobTitle: '', experience: 0, skills: [], points: awardedPoints };
+                        const newSeeker = { name, email, password, phone: '', profileImage: '', idImage: '', certImage: '', isVisible: true, isHired: false, rating: 0, reviewsCount: 0, jobTitle: '', experience: 0, skills: [], points: awardedPoints };
                         if (!JobAppState.isOffline) {
                             try {
                                 const docRef = await addDoc(collection(db, 'seekers'), newSeeker);
@@ -643,7 +643,6 @@
                     JobAppState.modals.request = true; JobApp.render();
                 },
 
-                // ميزة جديدة: فتح السيرة الذاتية كاملة للشركة لتعرف السؤال والإجابة
                 openEmployerSeekerDetails(seekerId) {
                     JobAppState.modals.employerSeekerDetails = JobAppState.seekers.find(s => s.id === seekerId);
                     JobApp.render();
@@ -831,7 +830,7 @@
                     try { if (!JobAppState.isOffline) await addDoc(collection(db, 'systemAdmins'), newAdmin); else { newAdmin.id = 'admin_' + Date.now(); JobAppState.systemAdmins.push(newAdmin); } JobApp.render(); alert("تم الإضافة"); } catch(err){}
                 },
                 async toggleFieldVisibility(id) { const field = JobAppState.formFields.find(f => f.id === id); if(field) { try { if (!JobAppState.isOffline) await updateDoc(doc(db, 'formFields', id), { visible: !field.visible }); else field.visible = !field.visible; JobApp.render(); } catch(e){} } },
-                async deleteField(id) { if(window.confirm('حذف החقل؟')) { try { if (!JobAppState.isOffline) await deleteDoc(doc(db, 'formFields', id)); else JobAppState.formFields = JobAppState.formFields.filter(f => f.id !== id); JobApp.render(); } catch(e){} } },
+                async deleteField(id) { if(window.confirm('حذف الحقل؟')) { try { if (!JobAppState.isOffline) await deleteDoc(doc(db, 'formFields', id)); else JobAppState.formFields = JobAppState.formFields.filter(f => f.id !== id); JobApp.render(); } catch(e){} } },
                 async handleAddNewField(e) {
                     e.preventDefault();
                     const type = e.target.type.value;
@@ -922,8 +921,6 @@
                                     ${JobAppState.formFields.map(f => {
                                         const isHidden = contactFields.includes(f.id);
                                         let answer = seeker.formData && seeker.formData[f.id] ? seeker.formData[f.id] : 'لم يُجب';
-                                        
-                                        // استثناء لبعض الحقول الأساسية لو لم تكن في الفورم داتا
                                         if (f.id === 'f1') answer = seeker.name;
                                         if (f.id === 'f15') answer = seeker.jobTitle;
 
@@ -1138,17 +1135,17 @@
 
                 employer_form() {
                     const currentUserPhone = JobAppState.loggedInUser ? JobAppState.loggedInUser.phone : null;
-                    const searchTerm = JobAppState.search.term || '';
+                    const term = JobAppState.search.term || '';
                     const filterJob = JobAppState.search.filterJob || 'الكل';
                     const filterExp = JobAppState.search.filterExp || 'الكل';
                     const isTableView = JobAppState.employerSeekersViewMode === 'table';
 
-                    const uniqueJobs = [...new Set(JobAppState.seekers.filter(s=>s.isVisible && s.jobTitle).map(s=>s.jobTitle))];
+                    const uniqueJobs = [...new Set(JobAppState.seekers.filter(s=>s.isVisible !== false && s.jobTitle).map(s=>s.jobTitle))];
 
                     let seekersHtml = '';
                     let tableRowsHtml = '';
                     
-                    JobAppState.seekers.filter(s => s.isVisible).forEach(s => {
+                    JobAppState.seekers.filter(s => s.isVisible !== false).forEach(s => {
                         const myReq = JobAppState.requests.find(r => r.seeker.id === s.id && r.employerPhone === currentUserPhone);
                         
                         let actionButtonHtml = '';
@@ -1158,10 +1155,15 @@
                             actionButtonHtml = `<button onclick="JobApp.actions.openEmployerSeekerDetails('${s.id}')" class="w-full bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white font-black py-2 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center justify-center gap-2 hover:scale-[1.02] text-sm"><i data-lucide="file-text" class="w-4 h-4"></i> عرض السيرة الذاتية (التفاصيل)</button>`;
                         }
 
-                        let searchableData = `${s.name} ${s.jobTitle} ${s.location} ${s.experience} ${s.skills.join(' ')}`;
+                        let searchableData = `${s.name || ''} ${s.jobTitle || ''} ${s.location || ''} ${s.experience || 0} ${(s.skills || []).join(' ')}`;
                         if (s.formData) Object.values(s.formData).forEach(val => searchableData += ` ${val}`);
 
-                        const displayStyle = ((filterJob !== 'الكل' && s.jobTitle !== filterJob) || (filterExp !== 'الكل' && s.experience < parseInt(filterExp))) ? 'display:none;' : (isTableView ? 'display:table-row;' : 'display:flex;');
+                        let match = true;
+                        if(term && !searchableData.toLowerCase().includes(term.toLowerCase())) match = false;
+                        if(filterJob !== 'الكل' && s.jobTitle !== filterJob) match = false;
+                        if(filterExp !== 'الكل' && (s.experience || 0) < parseInt(filterExp)) match = false;
+
+                        const displayStyle = !match ? 'display:none;' : (isTableView ? 'display:table-row;' : 'display:flex;');
 
                         // Card View (مبسط وواضح)
                         seekersHtml += `
