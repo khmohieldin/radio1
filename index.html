@@ -210,7 +210,8 @@
                 adminAddUser: false, 
                 bulkAdd: false,
                 employerSeekerDetails: null,
-                imageViewer: null // للتحكم بعارض الصور
+                imageViewer: null,
+                editField: null // لحفظ بيانات الحقل المراد تعديله
             },
             selectedItem: null, 
             search: { term: '', filterJob: 'الكل', filterExp: 'الكل' },
@@ -726,6 +727,43 @@
                     e.preventDefault(); const type = e.target.type.value; const fieldToAdd = { id: 'f' + Date.now(), section: e.target.section.value, label: e.target.label.value, type, required: e.target.required.checked, visible: true, options: type === 'select' ? (e.target.optionsString?e.target.optionsString.value.split(',').map(s=>s.trim()):[]) : null };
                     try { if (!JobAppState.isOffline) await setDoc(doc(db, 'formFields', fieldToAdd.id), fieldToAdd); else { JobAppState.formFields.push(fieldToAdd); saveLocal('formFields', JobAppState.formFields); JobApp.render(); } } catch(err){}
                 },
+                openEditFieldModal(id) {
+                    JobAppState.modals.editField = JobAppState.formFields.find(f => f.id === id);
+                    JobApp.render();
+                },
+                closeEditFieldModal() {
+                    JobAppState.modals.editField = null;
+                    JobApp.render();
+                },
+                async submitEditField(e) {
+                    e.preventDefault();
+                    if(!JobAppState.modals.editField) return;
+                    const id = JobAppState.modals.editField.id;
+                    const type = e.target.type.value;
+                    const updatedField = {
+                        ...JobAppState.modals.editField,
+                        label: e.target.label.value,
+                        section: e.target.section.value,
+                        type: type,
+                        required: e.target.required.checked,
+                        options: type === 'select' ? (e.target.optionsString.value ? e.target.optionsString.value.split(',').map(s=>s.trim()) : []) : null
+                    };
+
+                    try {
+                        if (!JobAppState.isOffline) {
+                            await updateDoc(doc(db, 'formFields', id), updatedField);
+                        } else {
+                            const idx = JobAppState.formFields.findIndex(f => f.id === id);
+                            if(idx > -1) JobAppState.formFields[idx] = updatedField;
+                            saveLocal('formFields', JobAppState.formFields);
+                        }
+                        JobAppState.modals.editField = null;
+                        alert("تم التعديل بنجاح");
+                        JobApp.render();
+                    } catch(err) {
+                        alert("خطأ أثناء التعديل: " + err.message);
+                    }
+                },
                 openAdminRequestDetails(reqId) { JobAppState.modals.adminRequestDetails = JobAppState.requests.find(r => r.id === reqId); JobApp.render(); },
                 closeAdminRequestDetails() { JobAppState.modals.adminRequestDetails = null; JobApp.render(); },
                 openUserDetails(type, id) { JobAppState.modals.userDetails = { type, data: type === 'seeker' ? JobAppState.seekers.find(s => s.id === id) : JobAppState.employers.find(e => e.id === id) }; JobApp.render(); },
@@ -872,7 +910,7 @@
                         </div>`;
                     }
                     if (JobAppState.modals.request && JobAppState.selectedItem) {
-                        html += `<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in"><div class="bg-[#110c2e] border border-purple-500/30 p-6 md:p-8 rounded-3xl shadow-[0_0_50px_rgba(168,85,247,0.3)] max-w-md w-full relative text-center"><button onclick="JobAppState.modals.request = false; JobApp.render()" class="absolute top-4 left-4 text-slate-400 hover:text-white">✕</button><h3 class="text-2xl font-black text-white mb-2">طلب تعيين كفاءة</h3><p class="text-purple-200/70 mb-4 text-sm leading-relaxed">أنت تطلب تعيين: <strong class="text-white">${JobAppState.selectedItem.jobTitle}</strong>.</p><div class="bg-purple-900/20 border border-purple-500/30 p-4 rounded-xl mb-6 shadow-inner text-center"><h4 class="text-white font-bold text-lg mb-2">لإتمام التعاقد ولتحديد موعد للمقابلة</h4><p class="text-purple-300 text-sm mb-2">يرجى التواصل مع الإدارة المباشرة على الرقم:</p><div class="flex items-center justify-center gap-4 mb-2"><a href="tel:01144800777" dir="ltr" class="text-2xl font-black text-amber-400 tracking-wider hover:text-amber-300 transition-colors">01144800777</a><a href="${JobApp.whatsappLink('01144800777')}" target="_blank" class="bg-green-500 hover:bg-green-400 text-white p-2 rounded-full transition-colors" title="مراسلة واتساب"><i data-lucide="message-circle" class="w-5 h-5"></i></a></div><span class="text-rose-400 font-bold text-xs flex items-center justify-center gap-1 mt-2"><i data-lucide="lock" class="w-3 h-3"></i> سيتم مشاركة بيانات الموظف للتواصل المباشر بعد موافقة الإدارة.</span></div><form onsubmit="JobApp.actions.submitHiringRequest(event)" autocomplete="off"><button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg">تأكيد إرسال الطلب للإدارة</button></form></div></div>`;
+                        html += `<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in"><div class="bg-[#110c2e] border border-purple-500/30 p-6 md:p-8 rounded-3xl shadow-[0_0_50px_rgba(168,85,247,0.3)] max-w-md w-full relative text-center"><button onclick="JobAppState.modals.request = false; JobApp.render()" class="absolute top-4 left-4 text-slate-400 hover:text-white">✕</button><h3 class="text-2xl font-black text-white mb-2">طلب تعيين كفاءة</h3><p class="text-purple-200/70 mb-4 text-sm leading-relaxed">أنت تطلب تعيين: <strong class="text-white">${JobAppState.selectedItem.jobTitle}</strong>.</p><div class="bg-purple-900/20 border border-purple-500/30 p-4 rounded-xl mb-6 shadow-inner text-center"><h4 class="text-white font-bold text-lg mb-2">لإتمام التعاقد ולتحديد موعد للمقابلة</h4><p class="text-purple-300 text-sm mb-2">يرجى التواصل مع الإدارة المباشرة على الرقم:</p><div class="flex items-center justify-center gap-4 mb-2"><a href="tel:01144800777" dir="ltr" class="text-2xl font-black text-amber-400 tracking-wider hover:text-amber-300 transition-colors">01144800777</a><a href="${JobApp.whatsappLink('01144800777')}" target="_blank" class="bg-green-500 hover:bg-green-400 text-white p-2 rounded-full transition-colors" title="مراسلة واتساب"><i data-lucide="message-circle" class="w-5 h-5"></i></a></div><span class="text-rose-400 font-bold text-xs flex items-center justify-center gap-1 mt-2"><i data-lucide="lock" class="w-3 h-3"></i> سيتم مشاركة بيانات الموظف للتواصل المباشر بعد موافقة الإدارة.</span></div><form onsubmit="JobApp.actions.submitHiringRequest(event)" autocomplete="off"><button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg">تأكيد إرسال الطلب للإدارة</button></form></div></div>`;
                     }
                     if (JobAppState.modals.rating && JobAppState.selectedItem) {
                         html += `<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in"><div class="bg-[#0f172a] border border-amber-500/30 p-6 md:p-8 rounded-3xl shadow-[0_0_50px_rgba(245,158,11,0.2)] max-w-md w-full relative"><button onclick="JobAppState.modals.rating = false; JobApp.render()" class="absolute top-4 left-4 text-slate-400 hover:text-white">✕</button><div class="text-center mb-6"><h3 class="text-2xl font-black text-white mb-2">تقييم الموظف</h3><p class="text-slate-400 text-sm">تقييمك يساعد في تحسين المنصة ويمنحك 5 نقاط!</p></div><form onsubmit="JobApp.actions.submitRating(event)" class="space-y-6" autocomplete="off"><div><label class="block text-center text-sm font-bold text-white mb-3">اختر التقييم</label><div class="flex justify-center gap-2 flex-row-reverse mb-4" dir="ltr">${[1,2,3,4,5].map(star => `<i data-lucide="star" onclick="JobApp.actions.setTempRating(${star})" class="w-10 h-10 cursor-pointer transition-all hover:scale-110 ${JobAppState.tempRating >= star ? 'fill-amber-400 text-amber-400' : 'text-slate-600 hover:text-amber-400'}"></i>`).join('')}</div></div><div><label class="block text-sm font-bold text-slate-300 mb-2">تعليق سريع <span class="text-rose-400">*</span></label><textarea name="feedback" required rows="3" class="w-full px-4 py-3 rounded-xl border border-white/10 bg-black/30 text-white text-base resize-none focus:ring-2 focus:ring-amber-400" placeholder="ما الذي أعجبك في السيرة الذاتية؟ (مطلوب)"></textarea></div><button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.4)]">تأكيد التقييم والحصول على النقاط</button></form></div></div>`;
@@ -938,6 +976,45 @@
                     if (JobAppState.modals.adminAddUser) {
                         const isSeeker = JobAppState.adminAddUserRole === 'seeker';
                         html += `<div class="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in"><div class="bg-[#0f172a] border border-slate-600 p-6 md:p-8 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] max-w-lg w-full relative max-h-[90vh] overflow-y-auto hide-scrollbar"><button onclick="JobApp.actions.closeAdminAddUserModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white">✕</button><h2 class="text-xl md:text-2xl font-black text-white mb-6 border-b border-white/10 pb-4">إضافة ${isSeeker ? 'طالب وظيفة' : 'شركة'}</h2><form onsubmit="JobApp.actions.adminSubmitNewUser(event)" class="space-y-4" autocomplete="off"><div><input name="name" required placeholder="الاسم" class="w-full px-4 py-3 rounded-lg bg-black/30 border border-slate-700 text-white"></div><div><input name="email" type="email" required placeholder="الإيميل" class="w-full px-4 py-3 rounded-lg bg-black/30 border border-slate-700 text-white text-left" dir="ltr"></div><div><input name="password" required value="123456" placeholder="الباسورد" class="w-full px-4 py-3 rounded-lg bg-black/30 border border-slate-700 text-white text-left" dir="ltr"></div><div><input name="phone" type="tel" placeholder="الهاتف" class="w-full px-4 py-3 rounded-lg bg-black/30 border border-slate-700 text-white text-left" dir="ltr"></div>${isSeeker ? `<div class="grid grid-cols-2 gap-4"><div><input name="jobTitle" required placeholder="الوظيفة" class="w-full px-4 py-2 rounded-lg bg-black/30 border border-slate-700 text-white"></div><div><input name="experience" type="number" required placeholder="الخبرة" class="w-full px-4 py-2 rounded-lg bg-black/30 border border-slate-700 text-white"></div></div>` : ''}<button type="submit" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg transition-all">إضافة وحفظ</button></form></div></div>`;
+                    }
+                    if (JobAppState.modals.editField) {
+                        const f = JobAppState.modals.editField;
+                        html += `
+                        <div class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+                            <div class="bg-slate-900 border border-amber-500/50 p-6 md:p-8 rounded-3xl shadow-2xl max-w-lg w-full relative">
+                                <button onclick="JobApp.actions.closeEditFieldModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white">✕</button>
+                                <h2 class="text-xl md:text-2xl font-black text-white mb-6 border-b border-white/10 pb-4 flex items-center gap-2"><i data-lucide="edit" class="text-amber-400"></i> تعديل الحقل</h2>
+                                <form onsubmit="JobApp.actions.submitEditField(event)" class="space-y-4" autocomplete="off">
+                                    <div><label class="block text-sm text-slate-300 mb-1">اسم الحقل</label><input name="label" value="${f.label}" required class="w-full px-4 py-2 rounded-lg bg-black/30 border border-slate-700 text-white outline-none focus:border-amber-400"></div>
+                                    <div>
+                                        <label class="block text-sm text-slate-300 mb-1">القسم</label>
+                                        <select name="section" required class="w-full px-4 py-2 rounded-lg bg-black/30 border border-slate-700 text-white outline-none focus:border-amber-400">
+                                            <option value="personal" ${f.section==='personal'?'selected':''}>البيانات الشخصية</option>
+                                            <option value="contact" ${f.section==='contact'?'selected':''}>بيانات الاتصال</option>
+                                            <option value="qualifications" ${f.section==='qualifications'?'selected':''}>المؤهلات العلمية</option>
+                                            <option value="experience" ${f.section==='experience'?'selected':''}>الخبرات والوظائف</option>
+                                            <option value="skills" ${f.section==='skills'?'selected':''}>المهارات</option>
+                                            <option value="bonus" ${f.section==='bonus'?'selected':''}>معلومات إضافية</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-300 mb-1">نوع الإجابة</label>
+                                        <select name="type" required class="w-full px-4 py-2 rounded-lg bg-black/30 border border-slate-700 text-white outline-none focus:border-amber-400">
+                                            <option value="text" ${f.type==='text'?'selected':''}>نص</option>
+                                            <option value="number" ${f.type==='number'?'selected':''}>رقم</option>
+                                            <option value="date" ${f.type==='date'?'selected':''}>تاريخ</option>
+                                            <option value="email" ${f.type==='email'?'selected':''}>إيميل</option>
+                                            <option value="tel" ${f.type==='tel'?'selected':''}>تليفون</option>
+                                            <option value="select" ${f.type==='select'?'selected':''}>قائمة منسدلة</option>
+                                            <option value="textarea" ${f.type==='textarea'?'selected':''}>نص طويل</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-sm text-slate-300 mb-1">خيارات القائمة (إن وجدت، مفصولة بفاصلة)</label><input name="optionsString" value="${f.options ? f.options.join(', ') : ''}" class="w-full px-4 py-2 rounded-lg bg-black/30 border border-slate-700 text-white outline-none focus:border-amber-400"></div>
+                                    <div class="flex items-center gap-2 mt-4 pb-2"><input type="checkbox" name="required" id="reqEditField" class="w-5 h-5 accent-amber-500 rounded" ${f.required?'checked':''}><label for="reqEditField" class="text-sm font-bold text-white cursor-pointer">هل الإجابة إجبارية؟</label></div>
+                                    <button type="submit" class="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> حفظ التعديلات</button>
+                                </form>
+                            </div>
+                        </div>`;
                     }
                     return html;
                 }
@@ -1444,6 +1521,90 @@
                         </div>`;
                     }
 
+                    if (JobAppState.adminTab === 'ads') {
+                        tabContent = `
+                        <div class="bg-black/30 border border-blue-500/30 p-6 md:p-8 rounded-3xl mb-8 shadow-lg">
+                            <h3 class="text-xl font-bold text-blue-400 mb-6 flex items-center gap-2"><i data-lucide="plus-circle"></i> إضافة إعلان جديد</h3>
+                            <div class="flex gap-4 mb-6">
+                                <button onclick="JobApp.actions.setAdFormType('external')" class="px-4 py-2 rounded-lg font-bold border transition-colors ${JobAppState.adFormType==='external'?'bg-blue-600 text-white border-blue-600':'border-blue-500/50 text-blue-400 hover:bg-blue-500/10'}">رابط خارجي</button>
+                                <button onclick="JobApp.actions.setAdFormType('internal')" class="px-4 py-2 rounded-lg font-bold border transition-colors ${JobAppState.adFormType==='internal'?'bg-blue-600 text-white border-blue-600':'border-blue-500/50 text-blue-400 hover:bg-blue-500/10'}">صفحة داخلية</button>
+                            </div>
+                            <form onsubmit="JobApp.actions.handleAddAd(event)" class="space-y-4">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div><label class="block text-sm text-slate-300 mb-1">عنوان الإعلان</label><input name="title" required class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white"></div>
+                                    <div>
+                                        <label class="block text-sm text-slate-300 mb-1">صورة الإعلان</label>
+                                        <div class="flex items-center gap-2">
+                                            <input name="imageUrl" type="url" placeholder="رابط الصورة (أو ارفع من الجهاز)" class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white" dir="ltr">
+                                            <label class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg cursor-pointer shrink-0"><i data-lucide="upload"></i><input type="file" accept="image/*" class="hidden" onchange="JobApp.actions.uploadImage(this, 'tempAdImage')"></label>
+                                        </div>
+                                        ${JobAppState.tempAdImage ? `<div class="mt-2"><img src="${JobAppState.tempAdImage}" class="h-16 rounded object-cover border border-slate-600"></div>` : ''}
+                                    </div>
+                                </div>
+                                ${JobAppState.adFormType === 'external' ? `
+                                    <div><label class="block text-sm text-slate-300 mb-1">وصف قصير</label><textarea name="description" required rows="2" class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white resize-none"></textarea></div>
+                                    <div><label class="block text-sm text-slate-300 mb-1">الرابط الوجهة (Link)</label><input name="link" type="url" required class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white" dir="ltr"></div>
+                                ` : `
+                                    <div class="grid md:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm text-slate-300 mb-1">عنوان الصفحة الداخلية</label><input name="pageTitle" required class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-sm text-slate-300 mb-1">لون النص</label><input name="textColor" type="color" value="#ffffff" class="w-full h-10 rounded-lg bg-black/40 border border-slate-700 p-1 cursor-pointer"></div>
+                                        <div><label class="block text-sm text-slate-300 mb-1">لون الخلفية</label><input name="bgColor" type="color" value="#1e3a8a" class="w-full h-10 rounded-lg bg-black/40 border border-slate-700 p-1 cursor-pointer"></div>
+                                        <div><label class="block text-sm text-slate-300 mb-1">رقم واتساب للتواصل</label><input name="whatsapp" type="tel" class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white" dir="ltr"></div>
+                                        <div><label class="block text-sm text-slate-300 mb-1">رابط زر إضافي (اختياري)</label><input name="urlLink" type="url" class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white" dir="ltr"></div>
+                                        <div><label class="block text-sm text-slate-300 mb-1">نص الزر الإضافي (اختياري)</label><input name="urlText" class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white"></div>
+                                    </div>
+                                    <div><label class="block text-sm text-slate-300 mb-1">محتوى الصفحة</label><textarea name="pageContent" required rows="4" class="w-full px-4 py-2 rounded-lg bg-black/40 border border-slate-700 text-white resize-none"></textarea></div>
+                                `}
+                                <div class="mt-6 flex justify-end">
+                                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all"><i data-lucide="plus"></i> نشر الإعلان</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            ${JobAppState.ads.map(ad => `
+                                <div class="glass-panel p-4 rounded-3xl border border-white/10 shadow-lg flex flex-col">
+                                    <img src="${ad.imageUrl}" class="w-full h-40 object-cover rounded-2xl mb-4 border border-white/5">
+                                    <h4 class="text-white font-bold text-lg mb-2">${ad.title}</h4>
+                                    <p class="text-slate-400 text-sm mb-4 line-clamp-2 flex-grow">${ad.type==='external'?ad.description:ad.pageTitle}</p>
+                                    <button onclick="JobApp.actions.deleteAd('${ad.id}')" class="bg-rose-500/20 text-rose-400 px-4 py-2.5 rounded-xl font-bold hover:bg-rose-500 hover:text-white transition-colors w-full flex items-center justify-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> حذف الإعلان</button>
+                                </div>
+                            `).join('')}
+                            ${JobAppState.ads.length === 0 ? '<div class="col-span-full text-center p-12 bg-black/20 rounded-3xl border border-dashed border-white/10 text-slate-400 text-lg font-bold">لا توجد إعلانات منشورة.</div>' : ''}
+                        </div>
+                        `;
+                    }
+
+                    if (JobAppState.adminTab === 'messages') {
+                        tabContent = `
+                        <div class="mb-6"><h3 class="text-xl font-bold text-blue-400 flex items-center gap-2"><i data-lucide="mail"></i> رسائل صندوق الوارد</h3></div>
+                        <div class="grid gap-4">
+                            ${JobAppState.messages.length === 0 ? '<div class="text-center p-12 text-slate-400 bg-black/20 rounded-3xl border border-dashed border-white/10 font-bold text-lg">لا توجد رسائل واردة حالياً</div>' : ''}
+                            ${JobAppState.messages.map(m => `
+                                <div class="glass-panel p-6 rounded-3xl border border-white/5 shadow-lg relative">
+                                    <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+                                        <div>
+                                            <h4 class="text-white font-bold text-xl flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 text-blue-400"></i> ${m.subject}</h4>
+                                            <div class="text-sm text-slate-400 mt-2 bg-black/30 p-2 rounded-lg inline-block border border-white/5">
+                                                من: <span class="font-bold text-slate-200 mr-2">${m.name}</span> | 
+                                                تواصل: <span dir="ltr" class="font-bold text-blue-300 ml-2 flex items-center gap-2 inline-flex">
+                                                    ${m.contact}
+                                                    <a href="tel:${m.contact}" class="text-blue-400 hover:text-white"><i data-lucide="phone" class="w-3 h-3"></i></a>
+                                                    <a href="${JobApp.whatsappLink(m.contact)}" target="_blank" class="text-green-400 hover:text-white"><i data-lucide="message-circle" class="w-3 h-3"></i></a>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs font-bold text-slate-500 bg-black/40 px-3 py-1.5 rounded-lg border border-white/5 shrink-0"><i data-lucide="calendar" class="inline w-3 h-3 mr-1"></i> ${m.date}</span>
+                                    </div>
+                                    <div class="bg-black/30 p-5 rounded-2xl text-slate-300 text-sm whitespace-pre-wrap leading-relaxed border border-white/5 border-l-4 border-l-blue-500">${m.content}</div>
+                                    <div class="mt-4 flex justify-end">
+                                        <button onclick="JobApp.actions.deleteMessage('${m.id}')" class="bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i> حذف الرسالة نهائياً</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        `;
+                    }
+
                     if (JobAppState.adminTab === 'users') {
                         let bulkBtn = JobAppState.usersSubTab === 'seekers' ? `<button onclick="JobAppState.modals.bulkAdd=true; JobApp.render()" class="bg-gradient-to-r from-amber-600 to-orange-500 text-white px-5 py-2.5 rounded-xl font-black text-sm mx-2 flex items-center gap-2"><i data-lucide="database" class="w-4 h-4"></i> إضافة ذكية (CSV)</button>` : '';
 
@@ -1554,7 +1715,8 @@
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <button onclick="JobApp.actions.toggleFieldVisibility('${f.id}')" class="px-4 py-2 rounded-lg text-xs font-bold border ${f.visible ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}">${f.visible ? 'ظاهر للعامة' : 'مخفي'}</button>
+                                            <button onclick="JobApp.actions.openEditFieldModal('${f.id}')" class="px-4 py-2 rounded-lg text-xs font-bold border bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30"><i data-lucide="edit-3" class="inline w-3 h-3 mr-1"></i>تعديل</button>
+                                            <button onclick="JobApp.actions.toggleFieldVisibility('${f.id}')" class="px-4 py-2 rounded-lg text-xs font-bold border ${f.visible ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}">${f.visible ? 'ظاهر' : 'مخفي'}</button>
                                             <button onclick="JobApp.actions.deleteField('${f.id}')" class="bg-rose-500/10 text-rose-400 p-2.5 rounded-lg border border-rose-500/30"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                         </div>
                                     </div>
