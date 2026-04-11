@@ -205,13 +205,13 @@
                 userDetails: null, 
                 adminAddUser: false, 
                 bulkAdd: false,
-                employerSeekerDetails: null // نافذة عرض السيرة الذاتية للشركات
+                employerSeekerDetails: null
             },
             selectedItem: null, 
             search: { term: '', filterJob: 'الكل', filterExp: 'الكل' },
             adminTab: 'system_admins',
             usersSubTab: 'seekers',
-            employerSeekersViewMode: 'table',
+            employerSeekersViewMode: 'cards',
 
             // Data Arrays
             systemAdmins: [{ id: 'admin_owner', name: 'خالد محي الدين', role: 'الدعم الفنى (المالك)', email: 'khmohieldin@gmail.com', phone: '01144800777', password: '123456', type: 'super_admin', profileImage: '', website: 'https://khaled-tech.com', color: 'green' }],
@@ -360,11 +360,13 @@
                 
                 if (window.lucide) { lucide.createIcons(); }
             },
+            
             navigate: function(view) {
                 JobAppState.view = view;
                 this.render();
                 window.scrollTo(0, 0);
             },
+            
             whatsappLink: function(phone) {
                 if (!phone) return '#';
                 let f = phone.replace(/\D/g, '');
@@ -464,7 +466,7 @@
                     }
 
                     if (role === 'seeker') {
-                        const newSeeker = { name, email, password, phone: '', profileImage: '', idImage: '', certImage: '', isVisible: true, isHired: false, rating: 0, reviewsCount: 0, jobTitle: '', experience: 0, skills: [], points: awardedPoints };
+                        const newSeeker = { name, email, password, phone: '', profileImage: '', idImage: '', certImage: '', isVisible: false, isHired: false, rating: 0, reviewsCount: 0, jobTitle: '', experience: 0, skills: [], points: awardedPoints };
                         if (!JobAppState.isOffline) {
                             try {
                                 const docRef = await addDoc(collection(db, 'seekers'), newSeeker);
@@ -535,7 +537,6 @@
                     JobAppState.tempCertImage = '';
                     JobApp.navigate('success');
                 },
-                
                 async submitSeekerBio(e) {
                     e.preventDefault();
                     const bioText = e.target.bio.value;
@@ -560,7 +561,6 @@
                     else alert("تم حفظ النبذة بنجاح وستظهر في ملفك للشركات.");
                     JobApp.render();
                 },
-
                 async submitEmployerProfile(e) {
                     e.preventDefault();
                     const updatedEmp = {
@@ -590,7 +590,6 @@
                     alert("تم تحديث وحفظ بيانات الشركة بنجاح!");
                     JobApp.render();
                 },
-
                 downloadPDF() {
                     const seeker = JobAppState.lastSubmittedSeeker;
                     if(!seeker) return alert("لا توجد بيانات للاستمارة الحالية.");
@@ -626,14 +625,12 @@
                         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
                     }).save().then(() => document.body.removeChild(element));
                 },
-
                 async submitContactMessage(e) {
                     e.preventDefault();
                     const msg = { id: Date.now().toString(), name: e.target.name.value, contact: e.target.contact.value, subject: e.target.subject.value, content: e.target.content.value, date: new Date().toLocaleDateString('ar-EG') };
                     if (!JobAppState.isOffline) { try { await addDoc(collection(db, 'messages'), msg); } catch(err){} } else { JobAppState.messages.unshift(msg); }
                     alert("تم إرسال رسالتك بنجاح."); e.target.reset();
                 },
-
                 openRequestModal(seekerId) {
                     if (!JobAppState.loggedInUser || JobAppState.loggedInUser.role !== 'employer') {
                         alert("يرجى تسجيل الدخول كصاحب عمل لتتمكن من طلب الكفاءات.");
@@ -642,7 +639,6 @@
                     JobAppState.selectedItem = JobAppState.seekers.find(s => s.id === seekerId);
                     JobAppState.modals.request = true; JobApp.render();
                 },
-
                 openEmployerSeekerDetails(seekerId) {
                     JobAppState.modals.employerSeekerDetails = JobAppState.seekers.find(s => s.id === seekerId);
                     JobApp.render();
@@ -651,7 +647,6 @@
                     JobAppState.modals.employerSeekerDetails = null;
                     JobApp.render();
                 },
-
                 async submitHiringRequest(e) {
                     if(e) e.preventDefault();
                     let emp = JobAppState.employers.find(x => x.id === JobAppState.loggedInUser.id);
@@ -675,10 +670,8 @@
                         JobApp.render();
                     } catch(err) {}
                 },
-
                 openRatingModal(reqId) { JobAppState.selectedItem = JobAppState.requests.find(r => r.id === reqId); JobAppState.tempRating = 0; JobAppState.modals.rating = true; JobApp.render(); },
                 setTempRating(val) { JobAppState.tempRating = val; JobApp.render(); },
-                
                 async submitRating(e) {
                     e.preventDefault();
                     const stars = JobAppState.tempRating;
@@ -707,7 +700,6 @@
                         JobAppState.modals.rating = false; alert('تم التقييم بنجاح! إضافة 5 نقاط لحسابك.'); JobApp.render();
                     } catch(err) {}
                 },
-
                 uploadImage(inputElement, callbackKey) {
                     const file = inputElement.files[0];
                     if(!file) return;
@@ -738,13 +730,11 @@
                     }
                     reader.readAsDataURL(file);
                 },
-                
                 async deletePortalImage(type) {
                     if(type === 'seeker') JobAppState.siteSettings.seekerPortalImg = '';
                     if(type === 'employer') JobAppState.siteSettings.employerPortalImg = '';
                     if (!JobAppState.isOffline) await setDoc(doc(db, 'settings', 'global'), JobAppState.siteSettings).catch(e=>{}); JobApp.render();
                 },
-
                 readCsvFile(e) {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -752,7 +742,6 @@
                     reader.onload = (event) => { document.getElementById('csvDataArea').value = event.target.result; };
                     reader.readAsText(file, 'UTF-8');
                 },
-
                 async markAsHired(id) {
                     const seeker = JobAppState.seekers.find(s => s.id === id);
                     if(seeker) {
@@ -777,7 +766,6 @@
                 },
                 openAdminAddUserModal(role) { JobAppState.adminAddUserRole = role; JobAppState.modals.adminAddUser = true; JobApp.render(); },
                 closeAdminAddUserModal() { JobAppState.modals.adminAddUser = false; JobApp.render(); },
-                
                 async adminSubmitNewUser(e) {
                     e.preventDefault();
                     const role = JobAppState.adminAddUserRole;
@@ -792,7 +780,6 @@
                         JobAppState.modals.adminAddUser = false; JobApp.render(); alert('تمت الإضافة بنجاح');
                     } catch(err){}
                 },
-
                 async saveSiteSettings(e) {
                     e.preventDefault();
                     JobAppState.siteSettings.name = e.target.siteName.value;
@@ -807,7 +794,6 @@
                     JobAppState.siteSettings.tickerManualText = e.target.tickerManualText.value;
                     try { if (!JobAppState.isOffline) await setDoc(doc(db, 'settings', 'global'), JobAppState.siteSettings); alert('تم الحفظ بنجاح!'); } catch(err){}
                 },
-
                 async handleBulkAdd(e) {
                     e.preventDefault();
                     const csv = e.target.csvData.value;
@@ -822,7 +808,6 @@
                     }
                     alert(`تمت إضافة ${added} موظفين بنجاح`); JobAppState.modals.bulkAdd = false; JobApp.render();
                 },
-                
                 async removeSystemAdmin(id) { if(window.confirm('إزالة المدير؟')) { try { if (!JobAppState.isOffline) await deleteDoc(doc(db, 'systemAdmins', id)); else JobAppState.systemAdmins = JobAppState.systemAdmins.filter(a => a.id !== id); JobApp.render(); } catch(e){} } },
                 async handleAddSystemAdmin(e) {
                     e.preventDefault();
@@ -1165,7 +1150,7 @@
 
                         const displayStyle = !match ? 'display:none;' : (isTableView ? 'display:table-row;' : 'display:flex;');
 
-                        // Card View (مبسط وواضح)
+                        // Card View
                         seekersHtml += `
                         <div class="seeker-card-wrapper w-full" style="${displayStyle}" data-search-text="${searchableData.replace(/"/g, '&quot;')}" data-job="${s.jobTitle}" data-exp="${s.experience}">
                             <div class="glass-panel w-full rounded-3xl p-6 shadow-lg flex flex-col border ${s.isHired ? 'border-rose-500/20 grayscale opacity-80' : 'border-white/10 hover:border-purple-500/40'}">
