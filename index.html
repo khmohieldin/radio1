@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منصة توظيف المصرية لخدمات الموارد البشرية وظفنى.كوم _ wzfny.com</title>
     
+    <!-- إخفاء تنبيه Tailwind الخاص ببيئة التطوير -->
+    <script>
+        const originalWarn = console.warn;
+        console.warn = (...args) => {
+            if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) return;
+            originalWarn(...args);
+        };
+    </script>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -118,10 +127,15 @@
             measurementId: "G-V06FDTKW19"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        window.db = db;
+        const isFileProtocol = window.location.protocol === 'file:';
+        let app, db, auth;
+
+        if (!isFileProtocol) {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            window.db = db;
+        }
 
         const fullDefaultFields = [
             { id: 'f1', section: 'personal', label: 'الاسم بالكامل "ثلاثى"', type: 'text', required: true, visible: true },
@@ -249,6 +263,7 @@
 
         // --- Firebase Initial Seeder ---
         async function seedDefaultsAndCount() {
+            if (isFileProtocol || !db) return;
             try {
                 const settingsRef = doc(db, 'settings', 'global');
                 const settingsSnap = await getDoc(settingsRef);
@@ -277,21 +292,9 @@
             renderTimer: null,
             init: async function() {
                 try {
-                    if (window.location.protocol === 'file:') throw new Error("PROTOCOL_ERROR");
+                    if (isFileProtocol) throw new Error("PROTOCOL_ERROR");
                     await signInAnonymously(auth);
-                    
-                    const settingsRef = doc(db, 'settings', 'global');
-                    const settingsSnap = await getDoc(settingsRef);
-                    if(!settingsSnap.exists()) await setDoc(settingsRef, JobAppState.siteSettings);
-                    else await updateDoc(settingsRef, { visitorsCount: increment(1) });
-
-                    const adminsSnap = await getDocs(collection(db, 'systemAdmins'));
-                    if(adminsSnap.empty) await addDoc(collection(db, 'systemAdmins'), { id: 'admin_owner', name: 'خالد محي الدين', role: 'الدعم الفنى (المالك)', email: 'khmohieldin@gmail.com', phone: '01144800777', password: '123456', type: 'super_admin', profileImage: '', color: 'green' });
-                    
-                    const fieldsSnap = await getDocs(collection(db, 'formFields'));
-                    if(fieldsSnap.empty || fieldsSnap.size < 15) {
-                        for(let f of fullDefaultFields) await setDoc(doc(db, 'formFields', f.id), f);
-                    }
+                    await seedDefaultsAndCount();
                     
                     onSnapshot(doc(db, 'settings', 'global'), doc => { if(doc.exists()) { JobAppState.siteSettings = doc.data(); this.syncSession(); this.render(); }});
                     onSnapshot(collection(db, 'systemAdmins'), snap => { JobAppState.systemAdmins = snap.docs.map(d => ({id: d.id, ...d.data()})); this.syncSession(); this.render(); });
@@ -1154,7 +1157,7 @@
                             else if(f.type === 'textarea') inputHtml = `<textarea name="${f.id}" ${f.required?'required':''} rows="3" class="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/20 text-white text-sm sm:text-base outline-none focus:border-blue-400 resize-none">${val}</textarea>`;
                             else inputHtml = `<input name="${f.id}" value="${val}" type="${f.type}" ${f.type==='email' || f.type==='tel' || f.type==='date' ? 'dir="ltr"' : ''} ${f.required?'required':''} class="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/20 text-white text-sm sm:text-base outline-none focus:border-blue-400 ${f.type==='email' || f.type==='tel' || f.type==='date' ? 'text-left' : ''}">`;
 
-                            return `<div class="${fullW}"><label class="block text-xs sm:text-sm font-bold text-blue-100 mb-2">${f.label} ${req}</label>${inputHtml}</div>`;
+                            return `<div class="${fullW}"><label class="block text-sm font-bold text-blue-100 mb-2">${f.label} ${req}</label>${inputHtml}</div>`;
                         }).join('');
                     };
 
