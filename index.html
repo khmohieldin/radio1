@@ -70,13 +70,14 @@
         .ad-card:nth-child(even) { animation-delay: -2s; animation-direction: alternate-reverse; }
 
         @keyframes ticker-ltr {
-            from { transform: translateX(-100%); }
-            to { transform: translateX(100vw); }
+            0% { transform: translateX(-100vw); }
+            100% { transform: translateX(100%); }
         }
         .animate-ticker {
             display: inline-block;
             white-space: nowrap;
-            padding-right: 100vw;
+            padding-left: 100vw;
+            will-change: transform;
             animation: ticker-ltr linear infinite;
         }
         .marquee-container {
@@ -210,6 +211,7 @@
             const el = document.getElementById('dynamic-ticker-text');
             if(!el) return;
             const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const fallbackNews = `📅 تحديث اليوم: ${today} &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 📈 نمو ملحوظ في قطاعات التكنولوجيا والمبيعات في السوق المصري &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 💡 نصيحة مهنية: تطوير مهارات التواصل (Soft Skills) يضاعف من فرص قبولك بنسبة 70% &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 📊 الشركات الناشئة توفر فرص عمل مرنة وتنافسية للكفاءات الشابة &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 🎯 كتابة سيرة ذاتية واضحة ومختصرة هي بوابتك الأولى للوصول للمقابلة الشخصية`;
 
             try {
                 const controller = new AbortController();
@@ -221,9 +223,11 @@
                 if(data && data.items && data.items.length > 0) {
                     const headlines = data.items.slice(0, 10).map(item => item.title);
                     el.innerHTML = `📅 تحديث اليوم: ${today} &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; ` + headlines.join(' &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; ');
+                } else {
+                    el.innerHTML = fallbackNews;
                 }
             } catch(e) {
-                console.log("استخدام الأخبار الافتراضية");
+                el.innerHTML = fallbackNews;
             }
         };
 
