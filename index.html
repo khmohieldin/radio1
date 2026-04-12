@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head>
+<head>a
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منصة توظيف المصرية لخدمات الموارد البشرية وظفنى.كوم _ wzfny.com</title>
@@ -1089,14 +1089,8 @@
                         if (tMode === 'auto') {
                             tText = `🏢 عدد الشركات المنضمة (${cEmployers} شركة) &nbsp;&nbsp; | &nbsp;&nbsp; 👨‍💼 عدد الموظفين الباحثين (${cSeekers} موظف) &nbsp;&nbsp; | &nbsp;&nbsp; ✅ بفضل الله تم الاتفاق وتوظيف (${cHired} موظف)`;
                         } else if (tMode === 'market') {
-                            const marketNews = [
-                                "📈 سوق العمل: نمو ملحوظ في قطاعات التكنولوجيا والمبيعات في السوق المصري.",
-                                "💡 نصيحة مهنية: تطوير مهارات التواصل (Soft Skills) يضاعف من فرص قبولك في المقابلات بنسبة 70%.",
-                                "📊 إحصائيات: الشركات الناشئة المصرية توفر فرص عمل مرنة وتنافسية للكفاءات الشابة.",
-                                "🎯 التوظيف: كتابة سيرة ذاتية واضحة ومختصرة هي بوابتك الأولى للوصول إلى المقابلة الشخصية.",
-                                "🚀 نصيحة للشركات: توفير بيئة عمل صحية يزيد من ولاء وإنتاجية الموظفين."
-                            ];
-                            tText = marketNews.join(' &nbsp;&nbsp; 🔴 &nbsp;&nbsp; ');
+                            tText = `<span id="dynamic-ticker-text">جاري جلب أحدث أخبار سوق العمل المصري...</span>`;
+                            setTimeout(() => { if(window.fetchMarketNews) window.fetchMarketNews(); }, 100);
                         } else {
                             tText = settings.tickerManualText || 'أهلاً بكم في المنصة...';
                         }
@@ -1106,7 +1100,7 @@
                             <div class="absolute right-0 top-0 bottom-0 bg-[#050814] px-3 sm:px-4 flex items-center justify-center font-black text-xs sm:text-sm shadow-[10px_0_20px_rgba(0,0,0,0.9)] z-20 border-l border-blue-500/30 text-amber-400 shrink-0">
                                 <i data-lucide="radio" class="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 animate-pulse text-rose-500"></i> أخبار الموقع
                             </div>
-                            <div class="animate-ticker text-sm sm:text-base font-bold text-blue-100 flex-grow" style="animation-duration: ${tSpeed}s;">
+                            <div class="animate-ticker text-sm sm:text-base font-bold text-blue-100" style="animation-duration: ${tSpeed}s;">
                                 ${tText}
                             </div>
                         </div>`;
