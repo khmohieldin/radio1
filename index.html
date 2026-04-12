@@ -210,20 +210,20 @@
             const el = document.getElementById('dynamic-ticker-text');
             if(!el) return;
             const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            const fallbackNews = `📅 تحديث اليوم: ${today} &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 📈 نمو ملحوظ في قطاعات التكنولوجيا والمبيعات في السوق المصري &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 💡 نصيحة مهنية: تطوير مهارات التواصل (Soft Skills) يضاعف من فرص قبولك بنسبة 70% &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 📊 الشركات الناشئة توفر فرص عمل مرنة وتنافسية للكفاءات الشابة &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 🎯 كتابة سيرة ذاتية واضحة ومختصرة هي بوابتك الأولى للوصول للمقابلة الشخصية`;
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
                 const rssUrl = encodeURIComponent('https://news.google.com/rss/search?q=وظائف+OR+سوق+العمل+مصر&hl=ar&gl=EG&ceid=EG:ar');
-                const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
+                const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await res.json();
                 if(data && data.items && data.items.length > 0) {
                     const headlines = data.items.slice(0, 10).map(item => item.title);
                     el.innerHTML = `📅 تحديث اليوم: ${today} &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; ` + headlines.join(' &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; ');
-                } else {
-                    el.innerHTML = fallbackNews;
                 }
             } catch(e) {
-                el.innerHTML = fallbackNews;
+                console.log("استخدام الأخبار الافتراضية");
             }
         };
 
@@ -1110,7 +1110,8 @@
                         if (tMode === 'auto') {
                             tText = `🏢 عدد الشركات المنضمة (${cEmployers} شركة) &nbsp;&nbsp; | &nbsp;&nbsp; 👨‍💼 عدد الموظفين الباحثين (${cSeekers} موظف) &nbsp;&nbsp; | &nbsp;&nbsp; ✅ بفضل الله تم الاتفاق وتوظيف (${cHired} موظف)`;
                         } else if (tMode === 'market') {
-                            tText = `<span id="dynamic-ticker-text">جاري جلب أحدث أخبار سوق العمل المصري...</span>`;
+                            const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                            tText = `<span id="dynamic-ticker-text">📅 تحديث اليوم: ${today} &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 📈 نمو ملحوظ في قطاعات التكنولوجيا والمبيعات في السوق المصري &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 💡 نصيحة مهنية: تطوير مهارات التواصل (Soft Skills) يضاعف من فرص قبولك بنسبة 70% &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 📊 الشركات الناشئة توفر فرص عمل مرنة وتنافسية للكفاءات الشابة &nbsp;&nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp;&nbsp; 🎯 كتابة سيرة ذاتية واضحة ومختصرة هي بوابتك الأولى للوصول للمقابلة الشخصية</span>`;
                             setTimeout(() => { if(window.fetchMarketNews) window.fetchMarketNews(); }, 100);
                         } else {
                             tText = settings.tickerManualText || 'أهلاً بكم في المنصة...';
