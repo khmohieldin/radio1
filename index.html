@@ -736,12 +736,20 @@
                     JobAppState.modals.bulkAdd = false; 
                     JobApp.render();
                 },
-                async removeSystemAdmin(id) { if(window.confirm('إزالة المدير؟')) { try { if (!JobAppState.isOffline) await deleteDoc(doc(db, 'systemAdmins', id)); else { JobAppState.systemAdmins = JobAppState.systemAdmins.filter(a => a.id !== id); saveLocal('systemAdmins', JobAppState.systemAdmins); JobApp.render(); } } catch(e){} } },
+                async removeSystemAdmin(id) {
+                    if (id === 'admin_owner' && JobAppState.loggedInAdmin.id !== 'admin_owner') {
+                        return alert('ممنوع! غير مصرح لك بحذف المالك الأساسي للموقع.');
+                    }
+                    if(window.confirm('إزالة المدير؟')) { try { if (!JobAppState.isOffline) await deleteDoc(doc(db, 'systemAdmins', id)); else { JobAppState.systemAdmins = JobAppState.systemAdmins.filter(a => a.id !== id); saveLocal('systemAdmins', JobAppState.systemAdmins); JobApp.render(); } } catch(e){} } 
+                },
                 async handleAddSystemAdmin(e) {
                     e.preventDefault(); const newAdmin = { name: e.target.name.value, email: e.target.email.value, password: e.target.password.value, role: e.target.roleType.value === 'super_admin' ? 'مدير عام' : 'مسئول مساعد', type: e.target.roleType.value, color: e.target.roleType.value === 'super_admin' ? 'red' : 'blue' };
                     try { if (!JobAppState.isOffline) await addDoc(collection(db, 'systemAdmins'), newAdmin); else { newAdmin.id = 'admin_' + Date.now(); JobAppState.systemAdmins.push(newAdmin); saveLocal('systemAdmins', JobAppState.systemAdmins); } JobApp.render(); alert("تم الإضافة"); } catch(err){}
                 },
                 openEditAdminModal(id) {
+                    if (id === 'admin_owner' && JobAppState.loggedInAdmin.id !== 'admin_owner') {
+                        return alert('ممنوع! غير مصرح لك بتعديل أو فتح بيانات المالك الأساسي للموقع.');
+                    }
                     JobAppState.modals.editAdmin = JobAppState.systemAdmins.find(a => a.id === id);
                     JobApp.render();
                 },
@@ -753,6 +761,9 @@
                     e.preventDefault();
                     if(!JobAppState.modals.editAdmin) return;
                     const id = JobAppState.modals.editAdmin.id;
+                    if (id === 'admin_owner' && JobAppState.loggedInAdmin.id !== 'admin_owner') {
+                        return alert('ممنوع! غير مصرح لك بتعديل بيانات المالك الأساسي للموقع.');
+                    }
                     const updatedAdmin = {
                         ...JobAppState.modals.editAdmin,
                         name: e.target.name.value,
