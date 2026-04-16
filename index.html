@@ -1,4 +1,3 @@
-            toast.className = `toast-msg ${type === 'error' ? '!bg-red-500' : ''}`;
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -114,6 +113,7 @@
         .tab-btn.active { background-color: #2563EB; color: white; border-color: #2563EB; }
         .dark .tab-btn.active { background-color: #3B82F6; color: white; border-color: #3B82F6; }
 
+        /* Custom Card Styles */
         .glass-btn { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.3); }
         .glass-btn:hover { background: rgba(255, 255, 255, 0.3); }
         
@@ -124,17 +124,8 @@
 </head>
 <body class="flex items-center justify-center min-h-screen">
 
-    <!-- Toast Notifications -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white dark:bg-slate-900 z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="w-16 h-16 border-4 border-blue-200 border-t-primary rounded-full animate-spin"></div>
-        <p class="mt-4 font-bold text-lg dark-text">جاري التحميل...</p>
-    </div>
-
     <!-- Auth / Login Screen -->
-    <div id="auth-screen" class="fixed inset-0 bg-slate-100 dark:bg-slate-900 flex items-center justify-center z-50 p-4 transition-opacity duration-500 overflow-y-auto hidden">
+    <div id="auth-screen" class="fixed inset-0 bg-slate-100 dark:bg-slate-900 flex items-center justify-center z-50 p-4 transition-opacity duration-500 overflow-y-auto">
         <div class="dark-card p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center relative overflow-hidden border border-transparent my-auto">
             <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-primary to-blue-500 opacity-10 rounded-b-[60%]"></div>
             <div class="relative z-10">
@@ -161,7 +152,7 @@
                     <p class="dark-subtext mb-8 font-medium">ابدأ بتنظيم أموالك كالمحترفين</p>
                     <form id="register-form" class="space-y-4">
                         <input type="email" id="register-email" placeholder="البريد الإلكتروني" class="w-full p-4 rounded-2xl input-modern text-right font-medium" required>
-                        <input type="password" id="register-password" placeholder="كلمة المرور (6 أحرف على الأقل)" class="w-full p-4 rounded-2xl input-modern text-right font-medium" required minlength="6">
+                        <input type="password" id="register-password" placeholder="كلمة المرور" class="w-full p-4 rounded-2xl input-modern text-right font-medium" required>
                         <button type="submit" class="w-full bg-gradient-to-l from-secondary to-emerald-400 text-white p-4 rounded-2xl font-bold text-lg hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-green-500/30">إنشاء حسابي</button>
                     </form>
                     <p class="mt-8 text-sm dark-subtext font-medium">لديك حساب بالفعل؟ <button id="show-login" class="font-bold text-primary hover:text-blue-700 transition-colors">تسجيل الدخول</button></p>
@@ -192,6 +183,11 @@
                         <button id="logout-btn" class="w-10 h-10 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center text-danger hover:bg-red-100 transition-colors border border-red-100 dark:border-red-900/30">
                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                         </button>
+                    </div>
+
+                    <!-- Department Tabs -->
+                    <div class="overflow-x-auto hide-scrollbar -mx-6 px-6 pb-5">
+                        <div id="department-tabs" class="flex gap-2 w-max"></div>
                     </div>
 
                     <!-- Net Treasury Card -->
@@ -264,7 +260,7 @@
                 <div class="px-6 space-y-6">
                     <div class="dark-card p-5 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700">
                         <h3 class="text-xs font-bold dark-text mb-4 text-center">حركة الصندوق</h3>
-                        <div class="relative h-32 w-full flex justify-center items-center">
+                        <div class="relative h-32 w-full">
                             <canvas id="charityChart"></canvas>
                         </div>
                     </div>
@@ -276,7 +272,16 @@
                         </div>
                         <form id="form-charityIn" class="mb-5 space-y-3">
                             <div class="flex gap-2 items-center">
-                                <input type="text" id="charityIn-icon" name="icon" placeholder="🤝" class="w-16 p-4 rounded-2xl input-modern text-center text-xl" maxlength="2">
+                                <div class="relative group">
+                                    <div class="w-16 h-[56px] rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors" onclick="document.getElementById('charityIn-image-input').click()">
+                                        <img id="charityIn-image-preview" src="" class="hidden w-full h-full object-cover z-10 relative">
+                                        <span id="charityIn-image-placeholder" class="text-xl z-0">📷</span>
+                                    </div>
+                                    <button type="button" id="charityIn-image-remove" onclick="removeUploadedImage('charityIn-image-preview', 'charityIn-imageBase64', 'charityIn-image-placeholder', 'charityIn-image-remove')" class="hidden absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-20 hover:bg-red-600"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                                </div>
+                                <input type="file" id="charityIn-image-input" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'charityIn-image-preview', 'charityIn-imageBase64', 'charityIn-image-placeholder', 'charityIn-image-remove')">
+                                <input type="hidden" name="imageBase64" id="charityIn-imageBase64">
+                                <input type="text" id="charityIn-icon" name="icon" placeholder="أو 🤝" class="w-16 p-4 rounded-2xl input-modern text-center text-xl" maxlength="2">
                                 <input type="text" placeholder="اسم المتبرع أو الجهة" name="name" class="flex-1 p-4 rounded-2xl input-modern font-bold text-sm" required>
                             </div>
                             <div class="flex gap-3">
@@ -285,6 +290,7 @@
                             </div>
                             <button type="submit" class="w-full bg-emerald-500 text-white p-4 rounded-2xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 mt-2">حفظ التبرع</button>
                         </form>
+                        <div id="list-charityIn" class="space-y-4 border-t border-gray-100 dark:border-slate-700 pt-5 mt-5"></div>
                     </div>
                     
                     <div class="dark-card p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700">
@@ -294,7 +300,16 @@
                         </div>
                         <form id="form-charityOut" class="mb-5 space-y-3">
                             <div class="flex gap-2 items-center">
-                                <input type="text" id="charityOut-icon" name="icon" placeholder="🍲" class="w-16 p-4 rounded-2xl input-modern text-center text-xl" maxlength="2">
+                                <div class="relative group">
+                                    <div class="w-16 h-[56px] rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors" onclick="document.getElementById('charityOut-image-input').click()">
+                                        <img id="charityOut-image-preview" src="" class="hidden w-full h-full object-cover z-10 relative">
+                                        <span id="charityOut-image-placeholder" class="text-xl z-0">📷</span>
+                                    </div>
+                                    <button type="button" id="charityOut-image-remove" onclick="removeUploadedImage('charityOut-image-preview', 'charityOut-imageBase64', 'charityOut-image-placeholder', 'charityOut-image-remove')" class="hidden absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-20 hover:bg-red-600"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                                </div>
+                                <input type="file" id="charityOut-image-input" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'charityOut-image-preview', 'charityOut-imageBase64', 'charityOut-image-placeholder', 'charityOut-image-remove')">
+                                <input type="hidden" name="imageBase64" id="charityOut-imageBase64">
+                                <input type="text" id="charityOut-icon" name="icon" placeholder="أو 🍲" class="w-16 p-4 rounded-2xl input-modern text-center text-xl" maxlength="2">
                                 <input type="text" placeholder="أين تم صرف المبلغ؟" name="name" class="flex-1 p-4 rounded-2xl input-modern font-bold text-sm" required>
                             </div>
                             <div class="flex gap-3">
@@ -303,11 +318,7 @@
                             </div>
                             <button type="submit" class="w-full bg-rose-500 text-white p-4 rounded-2xl font-bold hover:bg-rose-600 transition-colors shadow-lg shadow-rose-500/20 mt-2">تسجيل مصروف</button>
                         </form>
-                    </div>
-
-                    <div class="dark-card p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 mb-8">
-                        <h3 class="text-lg font-black dark-text mb-4">سجل صندوق الخير</h3>
-                        <div id="list-charity" class="space-y-4"></div>
+                        <div id="list-charityOut" class="space-y-4 border-t border-gray-100 dark:border-slate-700 pt-5 mt-5"></div>
                     </div>
                 </div>
             </div>
@@ -316,9 +327,17 @@
             <div id="details-page" class="hidden animate-fade-in pt-10">
                 <header class="px-6 mb-5">
                     <h1 class="text-2xl font-black dark-text">السجلات والبطاقات</h1>
-                    <p class="dark-subtext text-sm mt-1 font-medium">إدارة شاملة لجميع الحسابات</p>
+                    <p id="details-subtitle" class="dark-subtext text-sm mt-1 font-medium">إدارة شاملة لجميع الحسابات</p>
                 </header>
                 
+                <!-- Search Bar -->
+                <div class="px-6 mb-5">
+                    <div class="relative shadow-sm rounded-2xl">
+                        <svg class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="text" id="search-input" placeholder="بحث عن شخص، معاملة، أو قسم..." class="w-full p-4 pr-12 rounded-2xl input-modern font-medium text-sm">
+                    </div>
+                </div>
+
                 <!-- Modern Tabs -->
                 <div class="px-6 mb-6">
                     <div class="flex bg-slate-200/50 dark:bg-slate-800/80 p-1.5 rounded-2xl backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50">
@@ -367,650 +386,1316 @@
                 <svg class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                 <span>الخير</span>
             </button>
-            <button type="button" class="nav-item text-gray-400 relative group" onclick="toggleSideMenu()">
+            <button type="button" class="nav-item text-gray-400 relative group" onclick="openSideMenu()">
                 <svg class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"></path></svg>
                 <span>المزيد</span>
             </button>
 
             <!-- Floating Action Button -->
-            <button type="button" onclick="openAddTransactionModal()" class="absolute left-1/2 -translate-x-1/2 top-0 -mt-7 fab w-16 h-16 bg-gradient-to-tr from-primary to-blue-400 rounded-full text-white flex items-center justify-center border-[5px] border-[#F8FAFC] dark:border-slate-800">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            <button type="button" onclick="openModal('add-transaction-modal')" class="absolute left-1/2 -translate-x-1/2 top-0 -mt-7 fab w-16 h-16 bg-gradient-to-tr from-primary to-blue-400 rounded-full text-white flex items-center justify-center border-[5px] border-[#F8FAFC] dark:border-slate-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
             </button>
         </footer>
     </div>
 
-    <!-- Modals and Overlays -->
-    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 modal-backdrop"></div>
-
-    <!-- Add Transaction Modal (Bottom Sheet) -->
-    <div id="add-transaction-modal" class="fixed bottom-0 left-1/2 w-full max-w-[400px] bg-white dark:bg-slate-800 rounded-t-[2.5rem] z-50 bottom-sheet shadow-2xl border-t border-slate-100 dark:border-slate-700">
-        <div class="p-6">
-            <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
-            <h2 class="text-2xl font-black dark-text mb-6">إضافة معاملة جديدة</h2>
+    <!-- Side Menu / Drawer -->
+    <div id="side-menu-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 modal-backdrop" onclick="closeSideMenu()"></div>
+    <div id="side-menu" class="fixed top-0 right-0 h-full w-4/5 max-w-[320px] dark-card shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col rounded-l-[2.5rem] overflow-hidden border-l border-slate-200 dark:border-slate-700">
+        <div class="p-6 bg-slate-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-700/50 flex justify-between items-center pt-10">
+            <h2 class="text-xl font-black dark-text">الإعدادات</h2>
+            <button onclick="closeSideMenu()" class="text-gray-400 hover:text-dark dark:hover:text-white bg-white dark:bg-slate-700 rounded-full p-2 shadow-sm border border-slate-100 dark:border-slate-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="p-6 flex-grow overflow-y-auto hide-scrollbar space-y-6">
             
-            <form id="transaction-form" class="space-y-4">
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <label class="cursor-pointer relative">
-                        <input type="radio" name="trans_type" value="to_me" class="peer sr-only" checked>
-                        <div class="p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-center transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-900/20">
-                            <p class="font-bold text-emerald-600 dark:text-emerald-400">لي (أطلبه)</p>
-                        </div>
+            <div class="flex flex-col gap-3">
+                <button onclick="toggleDarkMode()" class="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-100 dark:border-slate-700">
+                    <span class="font-bold dark-text flex items-center gap-3 text-sm">
+                        <div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-indigo-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></div>
+                        الوضع المظلم
+                    </span>
+                    <div class="w-11 h-6 bg-slate-200 dark:bg-primary rounded-full relative transition-colors shadow-inner">
+                        <div class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all right-1 dark:right-6 shadow-sm"></div>
+                    </div>
+                </button>
+
+                <button onclick="exportDataToCSV()" class="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-100 dark:border-slate-700">
+<span class="font-bold dark-text flex items-center gap-3 text-sm">
+<div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></div>
+تصدير السجلات (Excel)
+</span>
+</button>
+
+            <button onclick="downloadPDF()" class="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-100 dark:border-slate-700 mt-3">
+                <span class="font-bold dark-text flex items-center gap-3 text-sm">
+                    <div class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-primary"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                    تنزيل السجلات (PDF)
+                </span>
+            </button>
+
+            <button onclick="exportDataToJSON()" class="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-100 dark:border-slate-700 mt-3">
+                <span class="font-bold dark-text flex items-center gap-3 text-sm">
+                    <div class="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-amber-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></div>
+                    تنزيل نسخة لبياناتك (ملف)
+                </span>
+            </button>
+        </div>
+
+            <div class="dark-card p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700">
+                <h3 class="font-bold dark-text mb-4 flex items-center gap-2 text-sm">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                    أقسام الحسابات
+                </h3>
+                <form id="add-category-form" class="flex gap-2 mb-4">
+                    <input type="text" name="categoryName" placeholder="اسم القسم (العمل، العائلة..)" class="flex-grow p-3 text-sm rounded-xl input-modern font-medium" required>
+                    <button type="submit" class="bg-primary text-white p-3 rounded-xl hover:bg-blue-600 font-bold shadow-md shadow-blue-500/20">+</button>
+                </form>
+                <div id="categories-list" class="space-y-2 max-h-40 overflow-y-auto hide-scrollbar"></div>
+            </div>
+
+            <!-- Calculator -->
+            <div>
+                <h3 class="font-bold dark-text mb-4 flex items-center gap-2 text-sm px-2">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    آلة حاسبة
+                </h3>
+                <div class="bg-slate-900 p-4 rounded-[2rem] shadow-xl border border-slate-800">
+                    <div id="calc-display" class="bg-slate-800 text-white text-left text-3xl font-mono p-4 rounded-2xl mb-4 overflow-x-auto tracking-wider min-h-[70px] flex items-center justify-end shadow-inner">0</div>
+                    <div id="calc-buttons" class="grid grid-cols-4 gap-2" dir="ltr"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Overlay -->
+    <div id="modals-overlay" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] modal-backdrop" onclick="closeAllModals(event)">
+        
+        <!-- Add Transaction Bottom Sheet -->
+        <div id="add-transaction-modal" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[400px] dark-card rounded-t-[2.5rem] p-6 bottom-sheet shadow-2xl border-t border-slate-100 dark:border-slate-700" style="display: none;" onclick="event.stopPropagation()">
+            <button type="button" onclick="closeAllModals()" class="absolute top-6 left-6 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-full transition-colors z-10" title="إغلاق">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+            <h2 class="text-2xl font-black mb-6 dark-text pl-10">إضافة بطاقة/سجل <span id="add-modal-dept-name" class="text-sm font-bold text-primary block mt-1"></span></h2>
+            
+            <form id="add-transaction-form" class="space-y-4">
+                <div class="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1 mb-4">
+                    <label class="flex-1 text-center cursor-pointer">
+                        <input type="radio" name="debt-type" value="toMe" class="peer sr-only" checked>
+                        <div class="p-3 rounded-xl font-bold text-slate-500 peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-emerald-600 dark:peer-checked:text-emerald-400 peer-checked:shadow-sm transition-all">أعطيت (لك)</div>
                     </label>
-                    <label class="cursor-pointer relative">
-                        <input type="radio" name="trans_type" value="i_owe" class="peer sr-only">
-                        <div class="p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-center transition-all peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-900/20">
-                            <p class="font-bold text-rose-600 dark:text-rose-400">علي (أدفعه)</p>
-                        </div>
+                    <label class="flex-1 text-center cursor-pointer">
+                        <input type="radio" name="debt-type" value="iOwe" class="peer sr-only">
+                        <div class="p-3 rounded-xl font-bold text-slate-500 peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-rose-600 dark:peer-checked:text-rose-400 peer-checked:shadow-sm transition-all">أخذت (عليك)</div>
                     </label>
                 </div>
 
-                <input type="text" id="trans_entity" placeholder="اسم الشخص أو الجهة" class="w-full p-4 rounded-2xl input-modern font-bold" required>
-                <input type="number" id="trans_amount" placeholder="المبلغ" class="w-full p-4 rounded-2xl input-modern font-bold text-xl text-left" required min="0.01" step="0.01" dir="ltr">
-                <input type="date" id="trans_date" class="w-full p-4 rounded-2xl input-modern font-bold text-sm" required>
-                <input type="text" id="trans_note" placeholder="ملاحظات (اختياري)" class="w-full p-4 rounded-2xl input-modern text-sm">
+                <!-- Custom Color Picker -->
+                <div>
+                    <label class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block px-2">اختر لون البطاقة (لتمييز الشخص)</label>
+                    <div id="add-color-picker" class="flex gap-3 overflow-x-auto hide-scrollbar py-2 px-1">
+                        <!-- Filled by JS -->
+                    </div>
+                    <input type="hidden" name="colorId" id="add-tx-color" value="blue">
+                </div>
+
+                <div class="flex gap-2 items-center">
+                    <div class="relative group">
+                        <div class="w-16 h-[56px] rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors" onclick="document.getElementById('add-image-input').click()" title="رفع صورة من الجهاز">
+                            <img id="add-image-preview" src="" class="hidden w-full h-full object-cover z-10 relative">
+                            <span id="add-image-placeholder" class="text-xl z-0">📷</span>
+                        </div>
+                        <button type="button" id="add-image-remove" onclick="removeUploadedImage('add-image-preview', 'add-imageBase64', 'add-image-placeholder', 'add-image-remove')" class="hidden absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-20 hover:bg-red-600"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    </div>
+                    <input type="file" id="add-image-input" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'add-image-preview', 'add-imageBase64', 'add-image-placeholder', 'add-image-remove')">
+                    <input type="hidden" name="imageBase64" id="add-imageBase64">
+                    
+                    <input type="text" id="add-tx-icon" name="icon" placeholder="أو 👤" class="w-16 p-4 rounded-2xl input-modern text-center text-xl" maxlength="2" title="أيقونة (إيموجي)">
+                    <input type="text" id="add-tx-name" placeholder="اسم الشخص أو الجهة" name="name" class="flex-1 p-4 rounded-2xl input-modern font-bold" required>
+                </div>
                 
-                <button type="submit" class="w-full bg-primary text-white p-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 mt-4">حفظ المعاملة</button>
-                <button type="button" onclick="closeModal('add-transaction-modal')" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 p-4 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">إلغاء</button>
+                <div class="flex gap-3">
+                    <input type="number" placeholder="المبلغ" name="amount" class="w-2/3 p-4 rounded-2xl input-modern font-black text-xl text-primary" required min="0.01" step="0.01">
+                    <select id="transaction-category" name="category" class="w-1/3 p-4 rounded-2xl input-modern text-sm font-bold text-slate-700 dark:text-slate-300">
+                        <option value="عام">عام</option>
+                    </select>
+                </div>
+                
+                <div class="flex gap-3">
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-slate-500 mb-1 block px-1">تاريخ العملية</label>
+                        <input type="date" name="date" class="w-full p-4 rounded-2xl input-modern text-sm font-bold" required>
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-slate-500 mb-1 block px-1">تاريخ السداد (اختياري)</label>
+                        <input type="date" name="dueDate" class="w-full p-4 rounded-2xl input-modern text-sm font-bold">
+                    </div>
+                </div>
+
+                <input type="text" placeholder="سبب العملية أو تفاصيلها" name="reason" class="w-full p-4 rounded-2xl input-modern font-medium">
+                
+                <div class="relative">
+                    <input type="tel" id="add-tx-phone" placeholder="رقم الهاتف (اختياري)" name="phone" class="w-full p-4 rounded-2xl input-modern text-left pr-14 font-medium tracking-wider" dir="ltr">
+                    <button type="button" onclick="pickContact('add-tx-phone', 'add-tx-name')" class="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 text-primary bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 transition-colors" title="جهات الاتصال">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </button>
+                </div>
+                
+                <button type="submit" class="w-full bg-primary text-white p-4 rounded-2xl font-black text-lg hover:bg-blue-700 transition-colors shadow-xl shadow-blue-500/30 mt-4">حفظ وإضافة الكارت</button>
             </form>
         </div>
+
+        <!-- Edit Info Modal -->
+        <div id="edit-info-modal" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[400px] dark-card rounded-t-[2.5rem] p-6 bottom-sheet shadow-2xl border-t border-slate-100 dark:border-slate-700" style="display: none;" onclick="event.stopPropagation()">
+            <button type="button" onclick="closeAllModals()" class="absolute top-6 left-6 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-full transition-colors z-10"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+            <h2 class="text-2xl font-black mb-6 dark-text pl-10">تعديل بيانات الكارت</h2>
+            <form id="edit-info-form" class="space-y-4">
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block px-2">تغيير لون البطاقة</label>
+                    <div id="edit-color-picker" class="flex gap-3 overflow-x-auto hide-scrollbar py-2 px-1">
+                        <!-- Filled by JS -->
+                    </div>
+                    <input type="hidden" name="colorId" id="edit-tx-color">
+                </div>
+
+                <div class="flex gap-2 items-center">
+                    <div class="relative group">
+                        <div class="w-16 h-[56px] rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors" onclick="document.getElementById('edit-image-input').click()" title="رفع صورة من الجهاز">
+                            <img id="edit-image-preview" src="" class="hidden w-full h-full object-cover z-10 relative">
+                            <span id="edit-image-placeholder" class="text-xl z-0">📷</span>
+                        </div>
+                        <button type="button" id="edit-image-remove" onclick="removeUploadedImage('edit-image-preview', 'edit-imageBase64', 'edit-image-placeholder', 'edit-image-remove')" class="hidden absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-20 hover:bg-red-600"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    </div>
+                    <input type="file" id="edit-image-input" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'edit-image-preview', 'edit-imageBase64', 'edit-image-placeholder', 'edit-image-remove')">
+                    <input type="hidden" name="imageBase64" id="edit-imageBase64">
+
+                    <input type="text" id="edit-info-icon" placeholder="أو 👤" class="w-16 p-4 rounded-2xl input-modern text-center text-xl" maxlength="2">
+                    <input type="text" id="edit-info-name" placeholder="الاسم" class="flex-1 p-4 rounded-2xl input-modern font-bold" required>
+                </div>
+                <div class="relative">
+                    <input type="tel" id="edit-info-phone" placeholder="رقم الهاتف (اختياري)" class="w-full p-4 rounded-2xl input-modern text-left pr-14 font-medium tracking-wider" dir="ltr">
+                    <button type="button" onclick="pickContact('edit-info-phone', 'edit-info-name')" class="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 text-primary bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </button>
+                </div>
+                <button type="submit" class="w-full bg-slate-900 dark:bg-primary text-white p-4 rounded-2xl font-black text-lg hover:opacity-90 transition-colors shadow-xl mt-4">حفظ التعديلات</button>
+            </form>
+        </div>
+
+        <!-- Action Modal (Add/Deduct specific item) -->
+        <div id="action-modal" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[400px] dark-card rounded-t-[2.5rem] p-6 bottom-sheet shadow-2xl border-t border-slate-100 dark:border-slate-700" style="display: none;" onclick="event.stopPropagation()">
+            <button type="button" onclick="closeAllModals()" class="absolute top-6 left-6 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-full transition-colors z-10"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+            <h2 id="action-modal-title" class="text-2xl font-black mb-2 dark-text pl-10">إجراء عملية</h2>
+            <div class="mb-6 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                <div id="action-icon-box" class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg shadow-sm overflow-hidden"></div>
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-bold">تسجيل عملية لـ</p>
+                    <p id="action-name" class="font-black dark-text text-lg"></p>
+                </div>
+            </div>
+            <form id="action-form" class="space-y-4">
+                <div class="flex gap-3">
+                    <input type="number" id="action-amount" placeholder="المبلغ" class="w-2/3 p-4 rounded-2xl input-modern font-black text-2xl" required min="0.01" step="0.01" dir="ltr">
+                    <input type="date" id="action-date" class="w-1/3 p-4 rounded-2xl input-modern text-sm font-bold" required>
+                </div>
+                <input type="text" id="action-reason" placeholder="سبب العملية (مهم للرجوع إليه)" class="w-full p-4 rounded-2xl input-modern font-bold text-slate-800 dark:text-slate-100" required>
+                <button type="submit" id="action-submit-button" class="w-full text-white p-4 rounded-2xl font-black text-lg transition-all shadow-xl mt-4"></button>
+            </form>
+        </div>
+
+        <!-- Detailed History Modal -->
+        <div id="history-modal" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[400px] dark-card rounded-t-[2.5rem] p-6 bottom-sheet shadow-2xl h-[75vh] flex flex-col z-[70] border-t border-slate-100 dark:border-slate-700" style="display: none;" onclick="event.stopPropagation()">
+            <button type="button" onclick="closeAllModals()" class="absolute top-6 left-6 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white bg-white dark:bg-slate-800 rounded-full transition-colors z-10 shadow-sm border border-slate-100 dark:border-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="w-12 h-1.5 bg-white/50 rounded-full mx-auto mb-6 shrink-0 z-10 relative mix-blend-overlay"></div>
+            
+            <!-- Colored Header background will be injected here via JS -->
+            <div id="history-header-bg" class="absolute top-0 left-0 w-full h-40 rounded-t-[2.5rem] -z-0"></div>
+
+            <div class="flex flex-col items-center mb-6 shrink-0 relative z-10 mt-2">
+                <div id="history-avatar" class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl shadow-lg mb-3 overflow-hidden"></div>
+                <h2 id="history-name-title" class="text-2xl font-black text-white drop-shadow-md"></h2>
+                <p id="history-total-amount" class="text-white/90 font-bold text-sm mt-1 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm"></p>
+            </div>
+            
+            <div class="flex justify-between items-center mb-3 mt-4 shrink-0 relative z-10">
+                <h3 class="font-black dark-text text-lg">سجل العمليات</h3>
+            </div>
+            <div id="history-list" class="space-y-3 overflow-y-auto hide-scrollbar flex-grow pb-4 relative z-10"></div>
+        </div>
+
+        <!-- Overdue Alerts Modal -->
+        <div id="overdue-modal" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-[350px] dark-card rounded-[2.5rem] p-6 shadow-2xl transform scale-95 opacity-0 transition-all duration-300 pointer-events-none border border-rose-100 dark:border-rose-800/50 z-[90]" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-800/50 rotate-3">
+                <svg class="w-8 h-8 -rotate-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-black mb-2 text-center dark-text tracking-tight">تنبيه مواعيد السداد!</h2>
+            <p class="dark-subtext mb-5 text-center text-sm font-bold">تجاوز بعض الأشخاص موعد السداد المحدد للأرصدة التي تطلبها.</p>
+            <div id="overdue-list" class="space-y-3 max-h-[40vh] overflow-y-auto hide-scrollbar mb-5">
+                <!-- Overdue items injected here -->
+            </div>
+            <button onclick="closeAllModals()" class="w-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 p-4 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 font-bold transition-colors shadow-sm border border-slate-200 dark:border-slate-700">حسناً، إغلاق التنبيه</button>
+        </div>
+
+        <!-- Confirm Modal (Centered) -->
+        <div id="confirm-modal" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-[320px] dark-card rounded-[2rem] p-6 shadow-2xl transform scale-95 opacity-0 transition-all duration-300 pointer-events-none border border-slate-100 dark:border-slate-700 z-[80]" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-5 border border-rose-100 dark:border-rose-800/50 rotate-3">
+                <svg class="w-8 h-8 -rotate-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h2 id="confirm-title" class="text-xl font-black mb-2 text-center dark-text"></h2>
+            <p id="confirm-text" class="dark-subtext mb-6 text-center text-sm font-medium"></p>
+            <div class="flex justify-center gap-3">
+                <button id="confirm-cancel-btn" class="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 p-3.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 font-bold transition-colors">تراجع</button>
+                <button id="confirm-ok-btn" class="flex-1 bg-rose-500 text-white p-3.5 rounded-xl hover:bg-rose-600 font-bold transition-colors shadow-lg shadow-rose-500/30">تأكيد الحذف</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Side Menu -->
-    <div id="side-menu" class="fixed top-0 right-0 h-full w-[280px] bg-white dark:bg-slate-800 z-50 transform translate-x-full transition-transform duration-300 shadow-2xl flex flex-col">
-        <div class="p-6 border-b border-slate-100 dark:border-slate-700">
-            <h2 class="text-xl font-black dark-text">الإعدادات</h2>
-            <p id="menu-user-email" class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">زائر</p>
-        </div>
-        <div class="p-4 flex-1">
-            <button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-right dark-text font-bold mb-2">
-                <span class="text-xl" id="dark-mode-icon">🌙</span>
-                <span id="dark-mode-text">تفعيل الوضع الليلي</span>
-            </button>
-            <button onclick="logout()" class="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-right text-danger font-bold">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                تسجيل الخروج
-            </button>
-        </div>
-        <button onclick="toggleSideMenu()" class="p-4 text-center text-slate-500 font-bold border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">إغلاق القائمة</button>
-    </div>
-
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Firebase Configuration (from Canvas environment)
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-apiKey: "AIzaSy_Offline_Dummy_Key_Prevent_Crash_123",
-projectId: "offline-local-project",
-appId: "1:123456789:web:abcdef"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const fbConfigFallback = {
+        apiKey: "AIzaSyBorOF846FRb0WmDjvTMHFHDCH3SdJUIPw",
+        authDomain: "bankok-daf8e.firebaseapp.com",
+        projectId: "bankok-daf8e",
+        storageBucket: "bankok-daf8e.appspot.com",
+        messagingSenderId: "322925963877",
+        appId: "1:322925963877:web:262b5a158b97a9c70cb48c"
+    };
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fbConfigFallback;
+    const app = initializeApp(firebaseConfig);
+    
+    // تفعيل وضع الأوفلاين السحابي (يعمل بدون نت ويخزن محلياً ثم يرفع للسحابة عند الاتصال)
+    const db = initializeFirestore(app, {
+        localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+    });
+    
+    const auth = getAuth(app);
+    const appIdStr = typeof __app_id !== 'undefined' ? __app_id : 'bankoki-app';
+
+        // --- NEW: Professional Color Palette for Cards ---
+        const colorPalette = [
+            { id: 'blue', name: 'أزرق', bg1: '#3B82F6', bg2: '#1D4ED8' },
+            { id: 'indigo', name: 'نيلي', bg1: '#6366f1', bg2: '#4338ca' },
+            { id: 'purple', name: 'بنفسجي', bg1: '#8B5CF6', bg2: '#6D28D9' },
+            { id: 'pink', name: 'وردي', bg1: '#EC4899', bg2: '#BE185D' },
+            { id: 'orange', name: 'برتقالي', bg1: '#f97316', bg2: '#c2410c' },
+            { id: 'emerald', name: 'زمردي', bg1: '#10b981', bg2: '#047857' },
+            { id: 'teal', name: 'فيروزي', bg1: '#14b8a6', bg2: '#0f766e' },
+            { id: 'slate', name: 'رصاصي', bg1: '#64748b', bg2: '#334155' }
+        ];
+
+        function getGradientStyle(colorId) {
+            const c = colorPalette.find(p => p.id === colorId) || colorPalette[0];
+            return `background: linear-gradient(135deg, ${c.bg1}, ${c.bg2});`;
+        }
 
         // App State
-        let currentUser = null;
-        let unsubscribeTransactions = null;
-        let unsubscribeCharity = null;
-        let transactionsData = [];
-        let charityData = [];
-        let debtsChartInstance = null;
-        let charityChartInstance = null;
-        let isDarkMode = false;
+        let state = {
+            debtsToMe: [], debtsIOwe: [], charityIn: [], charityOut: [], categories: [], 
+            allTransactionsFlat: [], 
+            currentItemInfo: null, userId: null, firestoreListeners: [],
+            currentDepartmentFilter: 'الكل'
+        };
+        let chartsInstance = { debts: null, charity: null };
+        window.hasShownOverdueAlert = false; // Tracking overdue pop-up
 
-        // UI Elements
-        const authScreen = document.getElementById('auth-screen');
-        const appContainer = document.getElementById('app-container');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const menuUserEmail = document.getElementById('menu-user-email');
+        // Utility Functions
+        const getTodayDateString = () => new Date().toISOString().split('T')[0];
+        const formatCurrency = (num) => (num ? parseFloat(num) : 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م';
+        const formatDate = (dateString) => {
+            if(!dateString) return '';
+            const date = new Date(dateString);
+            const today = new Date();
+            if(date.toDateString() === today.toDateString()) return 'اليوم';
+            today.setDate(today.getDate() - 1);
+            if(date.toDateString() === today.toDateString()) return 'أمس';
+            return date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+        };
+        const calculateCurrentAmount = (item) => (item.history || []).reduce((sum, tx) => sum + tx.amount, 0);
 
-        // Pages
-        const pages = ['debts', 'charity', 'details'];
+        // --- إنشاء رسالة واتساب مفصلة تتضمن السجلات ---
+        const generateWhatsAppMessage = (item, type, totalAmt) => {
+            let msg = `مرحباً ${item.name}،\n\n`;
+            
+            if (type === 'toMe' || type === 'overdue') {
+                msg += `أذكرك بموعد سداد المبلغ المستحق، الإجمالي الحالي: *${formatCurrency(totalAmt)}* 💵\n\n`;
+            } else {
+                msg += `بخصوص الحساب بيننا، الإجمالي الحالي: *${formatCurrency(totalAmt)}* 💵\n\n`;
+            }
 
-        // --- Initialization & Auth ---
-        
-        const initAuth = async () => {
+            if (item.history && item.history.length > 0) {
+                msg += `📄 *سجل العمليات والتفاصيل (من الأحدث للأقدم):*\n`;
+                const sortedHistory = [...item.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+                sortedHistory.forEach(tx => {
+                    const txDate = new Date(tx.date).toLocaleDateString('ar-EG');
+                    const sign = tx.amount > 0 ? '➕' : '➖';
+                    msg += `▪ ${txDate} - ${tx.reason || tx.type}: ${sign} ${formatCurrency(Math.abs(tx.amount))}\n`;
+                });
+            }
+            
+            return encodeURIComponent(msg);
+        };
+
+        window.toggleDarkMode = () => {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            localStorage.setItem('bankoki_darkMode', html.classList.contains('dark'));
+            renderCharts(); 
+        };
+        if(localStorage.getItem('bankoki_darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        window.showToast = (message) => {
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.textContent = message;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function getCollectionPath(collectionName) {
+            if (typeof __app_id !== 'undefined') return collection(db, 'artifacts', appIdStr, 'users', state.userId, collectionName);
+            return collection(db, "users", state.userId, collectionName);
+        }
+        function getDocPath(collectionName, docId) {
+            if (typeof __app_id !== 'undefined') return doc(db, 'artifacts', appIdStr, 'users', state.userId, collectionName, docId);
+            return doc(db, "users", state.userId, collectionName, docId);
+        }
+
+        function getItemAndList(type, id) {
+            const maps = {
+                toMe: { list: state.debtsToMe, col: 'debtsToMe' }, iOwe: { list: state.debtsIOwe, col: 'debtsIOwe' },
+                charityIn: { list: state.charityIn, col: 'charityIn' }, charityOut: { list: state.charityOut, col: 'charityOut' },
+                category: { list: state.categories, col: 'categories' }
+            };
+            const data = maps[type];
+            return data ? { ...data, item: id ? data.list.find(d => d.id === id) : null } : { item: null, col: null };
+        }
+
+        // --- NEW: Handle Image Upload & Compression ---
+        window.handleImageUpload = (event, previewId, hiddenInputId, placeholderId, removeBtnId) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate it's an image
+            if (!file.type.startsWith('image/')) {
+                showToast('يرجى اختيار ملف صورة صحيح.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create a canvas to resize/compress the image
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 250; // Resize heavily to save DB space
+                    const MAX_HEIGHT = 250;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Compress to JPEG format (0.6 quality for small string footprint)
+                    const base64Str = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    // Update UI
+                    document.getElementById(hiddenInputId).value = base64Str;
+                    const previewEl = document.getElementById(previewId);
+                    previewEl.src = base64Str;
+                    previewEl.classList.remove('hidden');
+                    document.getElementById(placeholderId).classList.add('hidden');
+                    if (removeBtnId) document.getElementById(removeBtnId).classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.removeUploadedImage = (previewId, hiddenInputId, placeholderId, removeBtnId) => {
+            document.getElementById(hiddenInputId).value = '';
+            document.getElementById(previewId).src = '';
+            document.getElementById(previewId).classList.add('hidden');
+            document.getElementById(placeholderId).classList.remove('hidden');
+            if(removeBtnId) document.getElementById(removeBtnId).classList.add('hidden');
+            // Clear input file value so user can select same file again if needed
+            const inputs = document.querySelectorAll('input[type="file"]');
+            inputs.forEach(i => i.value = '');
+        };
+
+        window.pickContact = async (phoneInputId, nameInputId) => {
+            const supported = ('contacts' in navigator && 'ContactsManager' in window);
+            if (supported) {
+                try {
+                    const props = ['name', 'tel'];
+                    const contacts = await navigator.contacts.select(props, { multiple: false });
+                    if (contacts.length > 0) {
+                        const contact = contacts[0];
+                        if (contact.tel && contact.tel.length > 0) document.getElementById(phoneInputId).value = contact.tel[0].replace(/[^\d+]/g, '');
+                        if (nameInputId && contact.name && contact.name.length > 0) document.getElementById(nameInputId).value = contact.name[0];
+                    }
+                } catch (ex) { console.log("Contact Picker error:", ex); }
+            } else {
+                showToast('متصفحك لا يدعم جلب جهات الاتصال مباشرة. أدخل البيانات يدوياً.');
+            }
+        };
+
+        // Setup Color Pickers
+        function setupColorPickers() {
+            const buildHtml = (inputId) => colorPalette.map(c => 
+                `<div class="color-circle ${c.id==='blue'?'active':''}" style="${getGradientStyle(c.id)}" onclick="selectColor('${inputId}', '${c.id}', this)" title="${c.name}"></div>`
+            ).join('');
+            
+            document.getElementById('add-color-picker').innerHTML = buildHtml('add-tx-color');
+            document.getElementById('edit-color-picker').innerHTML = buildHtml('edit-tx-color');
+        }
+
+        window.selectColor = (inputId, colorId, element) => {
+            document.getElementById(inputId).value = colorId;
+            const container = element.parentElement;
+            container.querySelectorAll('.color-circle').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+        };
+
+        // Navigation & Modals
+        window.setDepartmentFilter = (deptName) => { state.currentDepartmentFilter = deptName; debouncedRenderAll(); };
+
+        window.switchDetailsTab = (tabName) => {
+            document.getElementById('tab-ledger').classList.toggle('active', tabName === 'ledger');
+            document.getElementById('tab-ledger').classList.toggle('text-slate-500', tabName !== 'ledger');
+            document.getElementById('tab-entities').classList.toggle('active', tabName === 'entities');
+            document.getElementById('tab-entities').classList.toggle('text-slate-500', tabName !== 'entities');
+            document.getElementById('content-ledger').classList.toggle('hidden', tabName !== 'ledger');
+            document.getElementById('content-entities').classList.toggle('hidden', tabName !== 'entities');
+        };
+
+        window.showPage = (pageName) => {
+            ['debts-page', 'charity-page', 'details-page'].forEach(p => {
+                document.getElementById(p).classList.toggle('hidden', p !== `${pageName}-page`);
+            });
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                if(btn.id) btn.classList.toggle('active', btn.id === `nav-${pageName}`);
+            });
+            if(pageName === 'debts' || pageName === 'charity') renderCharts();
+        };
+
+        window.openSideMenu = () => {
+            document.getElementById('side-menu-overlay').classList.add('open');
+            document.getElementById('side-menu').classList.remove('translate-x-full');
+        };
+        window.closeSideMenu = () => {
+            document.getElementById('side-menu-overlay').classList.remove('open');
+            document.getElementById('side-menu').classList.add('translate-x-full');
+        };
+
+        window.openModal = (modalId) => {
+            document.querySelectorAll('.bottom-sheet').forEach(m => {
+                if(m.id !== modalId) { m.classList.remove('open'); m.style.display = 'none'; }
+            });
+            
+            if(modalId === 'add-transaction-modal') {
+                const addTitleSpan = document.getElementById('add-modal-dept-name');
+                const catSelect = document.getElementById('transaction-category');
+                document.getElementById('add-transaction-form').reset();
+                document.getElementById('add-tx-color').value = 'blue';
+                setupColorPickers(); // reset visual selection
+                
+                // Clear Image Preview
+                removeUploadedImage('add-image-preview', 'add-imageBase64', 'add-image-placeholder', 'add-image-remove');
+
+                document.querySelectorAll('#add-transaction-form input[type="date"]').forEach(el => {
+                    if(el.name !== 'dueDate') el.value = getTodayDateString();
+                });
+                if (state.currentDepartmentFilter !== 'الكل') {
+                    addTitleSpan.textContent = `(${state.currentDepartmentFilter})`;
+                    catSelect.value = state.currentDepartmentFilter;
+                } else {
+                    addTitleSpan.textContent = '';
+                    catSelect.value = 'عام';
+                }
+            }
+            document.getElementById('modals-overlay').classList.add('open');
+            const target = document.getElementById(modalId);
+            if(target) {
+                target.style.display = target.id === 'history-modal' ? 'flex' : 'block';
+                setTimeout(() => { target.classList.add('open'); target.classList.remove('opacity-0', 'pointer-events-none', 'scale-95'); }, 10);
+            }
+        };
+
+        window.closeAllModals = (e) => {
+            if(e && e.target && e.target.id !== 'modals-overlay' && e.target.id !== 'confirm-cancel-btn') return;
+            document.getElementById('modals-overlay').classList.remove('open');
+            document.querySelectorAll('.bottom-sheet').forEach(m => {
+                m.classList.remove('open');
+                setTimeout(() => { if(!m.classList.contains('open')) m.style.display = 'none'; }, 400); 
+            });
+            document.getElementById('confirm-modal').classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+            document.getElementById('overdue-modal').classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+            state.currentItemInfo = null;
+        };
+
+        // --- Overdue Alert Logic ---
+        function checkOverdueDebts() {
+            if (window.hasShownOverdueAlert || !state.userId) return;
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const overdueItems = state.debtsToMe.filter(item => {
+                const amt = calculateCurrentAmount(item);
+                if (amt <= 0 || !item.dueDate) return false;
+                
+                const dueDate = new Date(item.dueDate);
+                dueDate.setHours(0,0,0,0);
+                
+                return dueDate < today;
+            });
+            
+            if (overdueItems.length > 0) {
+                const listEl = document.getElementById('overdue-list');
+                listEl.innerHTML = overdueItems.map(item => {
+                    const dueDate = new Date(item.dueDate);
+                    dueDate.setHours(0,0,0,0);
+                    const diffTime = Math.abs(today - dueDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const amt = calculateCurrentAmount(item);
+                    
+                    const phoneVal = item.phone ? item.phone.replace(/[^\d+]/g, '') : '';
+                    let contactHtml = '';
+                    if(phoneVal) {
+                        const msg = generateWhatsAppMessage(item, 'overdue', amt);
+                        contactHtml = `
+                        <div class="flex gap-2 mt-3">
+                            <a href="tel:${phoneVal}" class="flex-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 p-2.5 rounded-xl text-xs font-bold flex justify-center items-center gap-1 hover:bg-blue-200 transition-colors shadow-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg> اتصال</a>
+                            <a href="https://wa.me/${phoneVal}?text=${msg}" target="_blank" class="flex-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 p-2.5 rounded-xl text-xs font-bold flex justify-center items-center gap-1 hover:bg-emerald-200 transition-colors shadow-sm"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.505-.883-.81-1.479-1.811-1.653-2.108-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> واتساب</a>
+                        </div>`;
+                    }
+                    
+                    const displayIcon = item.image 
+                        ? `<img src="${item.image}" class="w-6 h-6 object-cover rounded-full inline-block ml-1">` 
+                        : (item.icon ? item.icon + ' ' : '');
+
+                    return `
+                    <div class="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-800/50 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black dark-text flex items-center">${displayIcon} ${item.name}</span>
+                            <span class="text-[10px] font-black bg-rose-200 text-rose-800 dark:bg-rose-800 dark:text-rose-200 px-2 py-1 rounded-md">متأخر ${diffDays} يوم</span>
+                        </div>
+                        <p class="text-sm font-black text-slate-700 dark:text-slate-300 mt-2 flex items-center gap-1">
+                            المطلوب: <span class="text-rose-600 dark:text-rose-400" dir="ltr">${formatCurrency(amt)}</span>
+                        </p>
+                        ${contactHtml}
+                    </div>`;
+                }).join('');
+                
+                document.getElementById('modals-overlay').classList.add('open');
+                document.getElementById('overdue-modal').classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+                window.hasShownOverdueAlert = true;
+            }
+        }
+
+        // --- ENHANCED HISTORY MODAL ---
+        window.openHistoryModal = (type, id) => {
+            const { item } = getItemAndList(type, id);
+            if (!item) return;
+            
+            const colorId = item.colorId || 'blue';
+            const gradientStyle = getGradientStyle(colorId);
+            
+            document.getElementById('history-header-bg').style = gradientStyle;
+            
+            // Set image or icon
+            const avatarBox = document.getElementById('history-avatar');
+            if(item.image) {
+                avatarBox.innerHTML = `<img src="${item.image}" class="w-full h-full object-cover rounded-2xl">`;
+            } else {
+                avatarBox.innerHTML = item.icon || '👤';
+            }
+
+            document.getElementById('history-name-title').textContent = item.name;
+            
+            const totalAmt = calculateCurrentAmount(item);
+            document.getElementById('history-total-amount').textContent = `الرصيد الحالي: ${formatCurrency(totalAmt)}`;
+
+            const list = document.getElementById('history-list');
+            if (!item.history || !item.history.length) {
+                list.innerHTML = `<p class="text-center text-gray-400 py-10 font-medium">لا توجد حركات مسجلة</p>`;
+            } else {
+                const historyWithIndex = item.history.map((tx, idx) => ({ ...tx, originalIndex: idx }));
+                list.innerHTML = historyWithIndex.sort((a,b) => new Date(b.date) - new Date(a.date)).map(tx => {
+                    const amountColor = tx.amount > 0 ? 'text-emerald-500 dark:text-emerald-400' : (tx.amount < 0 ? 'text-rose-500 dark:text-rose-400' : 'text-gray-500');
+                    const amountPrefix = tx.amount > 0 ? '+' : '';
+                    
+                    const reasonBg = tx.amount > 0 
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800/50' 
+                        : (tx.amount < 0 
+                            ? 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800/50' 
+                            : 'bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-gray-300');
+
+                    return `
+                    <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 flex flex-col gap-2 shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-black dark-text">${tx.type || 'عملية'}</p>
+                                <p class="mt-2 flex items-center flex-wrap gap-2">
+                                    <span class="${reasonBg} border px-2.5 py-1 rounded-lg text-xs font-black shadow-sm">${tx.reason || 'بدون تفاصيل'}</span> 
+                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 font-bold">${formatDate(tx.date)}</span>
+                                </p>
+                            </div>
+                            <p class="font-black text-lg ${amountColor} mt-1" dir="ltr">
+                                ${amountPrefix}${formatCurrency(tx.amount)}
+                            </p>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-2 border-t border-gray-100 dark:border-slate-700/50 pt-3">
+                            <button type="button" onclick="deleteTransaction('${type}', '${item.id}', ${tx.originalIndex})" class="text-xs text-rose-500 font-bold flex items-center gap-1 hover:text-rose-700 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>إلغاء العملية</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            openModal('history-modal');
+        };
+
+        window.deleteTransaction = (type, id, txIndex) => {
+            showConfirm('إلغاء المعاملة', 'هل أنت متأكد من مسح هذه المعاملة بالتحديد؟ سيتأثر إجمالي رصيد الكارت.', async () => {
+                if (!state.userId) return;
+                try {
+                    const { item, col } = getItemAndList(type, id);
+                    const newHistory = [...item.history];
+                    newHistory.splice(txIndex, 1);
+                    await updateDoc(getDocPath(col, id), { history: newHistory });
+                    showToast('تم الحذف بنجاح');
+                    setTimeout(() => openHistoryModal(type, id), 350);
+                } catch(e) { showToast('حدث خطأ أثناء الحذف'); }
+            });
+        };
+
+        window.openActionModal = (type, id, action) => {
+            const { item } = getItemAndList(type, id);
+            if (!item) return;
+            state.currentItemInfo = { type, id, item, action };
+            document.getElementById('action-modal-title').textContent = action === 'add' ? 'زيادة رصيد الكارت' : 'خصم / سداد';
+            document.getElementById('action-name').textContent = item.name;
+            
+            const iconBox = document.getElementById('action-icon-box');
+            iconBox.style = getGradientStyle(item.colorId || 'blue');
+            if(item.image) {
+                iconBox.innerHTML = `<img src="${item.image}" class="w-full h-full object-cover">`;
+            } else {
+                iconBox.innerHTML = item.icon || '👤';
+            }
+
+            const btn = document.getElementById('action-submit-button');
+            btn.textContent = action === 'add' ? 'إضافة المبلغ' : 'تأكيد الخصم';
+            btn.className = `w-full text-white p-4 rounded-2xl font-black text-lg transition-all shadow-xl mt-4 ${action === 'add' ? 'bg-gradient-to-l from-emerald-500 to-emerald-400 shadow-emerald-500/30' : 'bg-gradient-to-l from-rose-500 to-rose-400 shadow-rose-500/30'}`;
+            
+            document.getElementById('action-form').reset();
+            document.getElementById('action-date').value = getTodayDateString();
+            openModal('action-modal');
+        };
+
+        window.openEditInfoModal = (type, id) => {
+            const { item } = getItemAndList(type, id);
+            if (!item) return;
+            state.currentItemInfo = { type, id, item };
+            document.getElementById('edit-info-name').value = item.name || '';
+            document.getElementById('edit-info-phone').value = item.phone || '';
+            document.getElementById('edit-info-icon').value = item.icon || '';
+            
+            // Set image preview if exists
+            if (item.image) {
+                document.getElementById('edit-imageBase64').value = item.image;
+                document.getElementById('edit-image-preview').src = item.image;
+                document.getElementById('edit-image-preview').classList.remove('hidden');
+                document.getElementById('edit-image-placeholder').classList.add('hidden');
+                document.getElementById('edit-image-remove').classList.remove('hidden');
+            } else {
+                removeUploadedImage('edit-image-preview', 'edit-imageBase64', 'edit-image-placeholder', 'edit-image-remove');
+            }
+            
+            const cId = item.colorId || 'blue';
+            document.getElementById('edit-tx-color').value = cId;
+            const container = document.getElementById('edit-color-picker');
+            container.querySelectorAll('.color-circle').forEach(el => el.classList.remove('active'));
+            const activeCircle = Array.from(container.children).find(el => el.title === (colorPalette.find(p=>p.id===cId)?.name));
+            if(activeCircle) activeCircle.classList.add('active');
+
+            openModal('edit-info-modal');
+        };
+
+        window.showConfirm = (title, text, onConfirm) => {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-text').textContent = text;
+            const okBtn = document.getElementById('confirm-ok-btn');
+            okBtn.onclick = () => { onConfirm(); closeAllModals(); };
+            document.getElementById('confirm-cancel-btn').onclick = () => closeAllModals();
+            document.getElementById('modals-overlay').classList.add('open');
+            document.getElementById('confirm-modal').classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+        };
+
+        window.deleteItem = (type, id) => {
+             showConfirm('حذف البطاقة بالكامل', 'هل أنت متأكد من حذف هذه البطاقة نهائياً بكافة عملياتها السابقة والصور؟ لا يمكن التراجع.', async () => {
+                if (!state.userId) return;
+                const { col } = getItemAndList(type, id);
+                await deleteDoc(getDocPath(col, id));
+                showToast('تم الحذف بنجاح');
+             });
+        };
+
+        // Render Logic
+        let renderTimeout = null;
+        function debouncedRenderAll() {
+            if(renderTimeout) clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(() => {
+                flattenAllTransactions();
+                renderDepartmentTabs();
+                renderDashboard(); 
+                renderDetails(); 
+                renderCharity(); 
+                renderCategories(); 
+                renderCharts();
+                checkOverdueDebts(); // Trigger checking overdue items on render complete
+            }, 30);
+        }
+
+        function flattenAllTransactions() {
+            let allTxs = [];
+            const extract = (list, mainType, labelPositive, labelNegative) => {
+                list.forEach(item => {
+                    (item.history || []).forEach((tx, idx) => {
+                        let isPositiveEffect = tx.amount > 0;
+                        let typeLabel = mainType;
+                        let colorClass = isPositiveEffect ? 'text-emerald-500' : 'text-rose-500';
+                        
+                        allTxs.push({
+                            ...tx,
+                            itemName: item.name,
+                            icon: item.icon || '👤',
+                            image: item.image || null,
+                            colorId: item.colorId || 'blue',
+                            category: item.category || 'عام',
+                            globalTypeLabel: typeLabel,
+                            colorClass,
+                            parentType: mainType,
+                            parentId: item.id
+                        });
+                    });
+                });
+            };
+            
+            extract(state.debtsToMe, 'لك', 'إضافة', 'خصم');
+            extract(state.debtsIOwe, 'عليك', 'إضافة', 'سداد');
+            extract(state.charityIn, 'تبرع', 'وارد', 'خطأ');
+            extract(state.charityOut, 'مصروف', 'مصروف', 'خطأ');
+
+            state.allTransactionsFlat = allTxs.sort((a,b) => new Date(b.date) - new Date(a.date));
+        }
+
+        function renderDepartmentTabs() {
+            const tabsContainer = document.getElementById('department-tabs');
+            let html = `<button onclick="setDepartmentFilter('الكل')" class="whitespace-nowrap px-6 py-2.5 rounded-2xl text-sm font-black transition-all ${state.currentDepartmentFilter === 'الكل' ? 'bg-white dark:bg-slate-800 text-primary shadow-md transform scale-105 border border-slate-100 dark:border-slate-700' : 'bg-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}">الكل</button>`;
+            
+            let depts = [{name: 'عام'}, ...state.categories].filter((v,i,a)=>a.findIndex(t=>(t.name === v.name))===i);
+            depts.forEach(c => {
+                const isActive = state.currentDepartmentFilter === c.name;
+                html += `<button onclick="setDepartmentFilter('${c.name}')" class="whitespace-nowrap px-6 py-2.5 rounded-2xl text-sm font-black transition-all ${isActive ? 'bg-white dark:bg-slate-800 text-primary shadow-md transform scale-105 border border-slate-100 dark:border-slate-700' : 'bg-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}">${c.name}</button>`;
+            });
+            if(tabsContainer) tabsContainer.innerHTML = html;
+        }
+
+        function renderDashboard() {
+            const filteredToMe = state.debtsToMe.filter(d => state.currentDepartmentFilter === 'الكل' || d.category === state.currentDepartmentFilter);
+            const filteredIOwe = state.debtsIOwe.filter(d => state.currentDepartmentFilter === 'الكل' || d.category === state.currentDepartmentFilter);
+
+            const totOwe = filteredIOwe.reduce((sum, item) => sum + calculateCurrentAmount(item), 0);
+            const totMe = filteredToMe.reduce((sum, item) => sum + calculateCurrentAmount(item), 0);
+            document.getElementById('total-i-owe').textContent = formatCurrency(totOwe);
+            document.getElementById('total-to-me').textContent = formatCurrency(totMe);
+            document.getElementById('total-treasury').textContent = formatCurrency(totMe - totOwe);
+            
+            const recentTxs = state.allTransactionsFlat
+                .filter(tx => state.currentDepartmentFilter === 'الكل' || tx.category === state.currentDepartmentFilter)
+                .filter(tx => !tx.parentType.includes('خيري') && !tx.parentType.includes('تبرع'))
+                .slice(0, 6);
+
+            const list = document.getElementById('dashboard-activities-list');
+            if (!recentTxs.length) {
+                 list.innerHTML = `<div class="dark-card p-6 rounded-[2rem] text-center border border-gray-100 dark:border-slate-700 shadow-sm"><p class="dark-subtext font-bold text-sm">لا توجد حركات مالية هنا بعد.</p></div>`;
+                 return;
+            }
+             
+            list.innerHTML = recentTxs.map(tx => {
+                const isPositive = tx.amount > 0;
+                const sign = isPositive ? '+' : '';
+                const gradient = getGradientStyle(tx.colorId);
+
+                return `
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl flex items-center justify-between shadow-sm border border-slate-100 dark:border-slate-700/50 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]" onclick="openHistoryModal('${tx.parentType === 'لك' ? 'toMe' : 'iOwe'}', '${tx.parentId}')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl shadow-sm border border-white/20 overflow-hidden shrink-0" style="${gradient}">
+                            ${tx.image ? `<img src="${tx.image}" class="w-full h-full object-cover">` : tx.icon}
+                        </div>
+                        <div class="flex flex-col">
+                            <p class="font-black dark-text text-sm">${tx.itemName}</p>
+                            <p class="text-xs text-slate-500 font-bold mt-0.5 truncate w-32">${tx.reason || tx.type} • ${formatDate(tx.date)}</p>
+                        </div>
+                    </div>
+                    <div class="text-left flex flex-col items-end shrink-0">
+                        <p class="font-black ${tx.colorClass} text-sm" dir="ltr">${sign}${formatCurrency(tx.amount)}</p>
+                        <span class="text-[9px] bg-slate-100 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded-md mt-1 font-bold">${tx.globalTypeLabel}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- FULL ENTITY CARD (BANK CARD STYLE WITH CONTACT BUTTONS) ---
+        function createEntityCard(item, type, badgeColorClass) {
+            const amt = calculateCurrentAmount(item);
+            if (amt === 0 && item.history.length > 1) return ''; 
+            
+            const gradient = getGradientStyle(item.colorId || 'blue');
+            const typeLabel = type === 'toMe' ? 'رصيد لك' : (type === 'iOwe' ? 'رصيد عليك' : 'صندوق');
+
+            // Build Contact Links HTML if phone is present
+            let contactHtml = '';
+            if (item.phone) {
+                const cleanPhone = item.phone.replace(/[^\d+]/g, '');
+                const encodedMsg = generateWhatsAppMessage(item, type, amt);
+                
+                contactHtml = `
+                <div class="flex gap-2 mt-3 relative z-10 border-t border-white/20 pt-3">
+                    <a href="tel:${cleanPhone}" class="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-2 rounded-xl text-xs font-bold text-center flex justify-center items-center gap-1 transition-colors" title="اتصال بالهاتف">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg> اتصال
+                    </a>
+                    <a href="https://wa.me/${cleanPhone}?text=${encodedMsg}" target="_blank" class="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-2 rounded-xl text-xs font-bold text-center flex justify-center items-center gap-1 transition-colors" title="مراسلة عبر واتساب">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.505-.883-.81-1.479-1.811-1.653-2.108-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> واتساب
+                    </a>
+                </div>`;
+            }
+
+            return `
+            <div class="rounded-[2rem] p-5 shadow-lg relative overflow-hidden text-white" style="${gradient}">
+                <!-- Glass/Decorative Elements -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-8 -mt-8 blur-sm pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-6 -mb-6 blur-md pointer-events-none"></div>
+                
+                <div class="flex justify-between items-start mb-6 relative z-10">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-xl shadow-sm overflow-hidden">
+                                ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : (item.icon || '👤')}
+                            </div>
+                            <div>
+                                <h3 class="font-black text-lg cursor-pointer hover:underline decoration-dashed underline-offset-4" onclick="openHistoryModal('${type}', '${item.id}')">${item.name}</h3>
+                                ${item.category ? `<span class="text-[10px] bg-black/20 px-2 py-0.5 rounded-md mt-0.5 inline-block font-bold">${item.category}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button type="button" onclick="openEditInfoModal('${type}', '${item.id}')" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors backdrop-blur-sm" title="تعديل"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                        <button onclick="deleteItem('${type}', '${item.id}')" class="p-2 bg-white/10 hover:bg-rose-500/80 rounded-xl transition-colors backdrop-blur-sm" title="حذف الكارت">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-5 relative z-10">
+                    <p class="text-xs font-bold opacity-90 mb-1">${typeLabel}</p>
+                    <p class="font-black text-3xl tracking-tight drop-shadow-md" dir="ltr">${formatCurrency(amt)}</p>
+                </div>
+
+                <div class="flex gap-2 relative z-10 mt-2">
+                    <button type="button" onclick="openActionModal('${type}', '${item.id}', 'deduct')" class="flex-1 glass-btn py-2.5 rounded-xl text-sm font-black shadow-sm flex items-center justify-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"></path></svg> خصم
+                    </button>
+                    <button type="button" onclick="openActionModal('${type}', '${item.id}', 'add')" class="flex-1 glass-btn py-2.5 rounded-xl text-sm font-black shadow-sm flex items-center justify-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg> إضافة
+                    </button>
+                </div>
+                ${contactHtml}
+            </div>`;
+        }
+
+        function renderDetails(filterText = '') {
+            const isMatch = (i) => i.name.toLowerCase().includes(filterText.toLowerCase()) || (i.category && i.category.includes(filterText));
+            const isDeptMatch = (i) => state.currentDepartmentFilter === 'الكل' || i.category === state.currentDepartmentFilter;
+            
+            // Render Entities Tab
+            const toMeHtml = state.debtsToMe.filter(i => isMatch(i) && isDeptMatch(i)).map(i => createEntityCard(i, 'toMe')).join('');
+            document.getElementById('list-to-me').innerHTML = toMeHtml || '<p class="text-sm dark-subtext font-bold bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">لا توجد بطاقات مسجلة.</p>';
+            
+            const iOweHtml = state.debtsIOwe.filter(i => isMatch(i) && isDeptMatch(i)).map(i => createEntityCard(i, 'iOwe')).join('');
+            document.getElementById('list-i-owe').innerHTML = iOweHtml || '<p class="text-sm dark-subtext font-bold bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">لا توجد بطاقات مسجلة.</p>';
+
+            // Render Global Ledger Tab
+            const filteredLedger = state.allTransactionsFlat
+                .filter(tx => isMatch({name: tx.itemName, category: tx.category}))
+                .filter(tx => isDeptMatch({category: tx.category}));
+
+            const ledgerHtml = filteredLedger.map(tx => {
+                const sign = tx.amount > 0 ? '+' : '';
+                const gradient = getGradientStyle(tx.colorId);
+                const amountColor = tx.amount > 0 ? 'text-emerald-500' : (tx.amount < 0 ? 'text-rose-500' : 'text-gray-500');
+
+                return `
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl flex items-center justify-between shadow-sm border border-slate-100 dark:border-slate-700/50 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]" onclick="openHistoryModal('${tx.parentType === 'لك' ? 'toMe' : (tx.parentType === 'عليك' ? 'iOwe' : (tx.parentType === 'تبرع' ? 'charityIn' : 'charityOut'))}', '${tx.parentId}')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl shadow-sm border border-white/20 shrink-0 overflow-hidden" style="${gradient}">
+                            ${tx.image ? `<img src="${tx.image}" class="w-full h-full object-cover">` : tx.icon}
+                        </div>
+                        <div class="flex flex-col">
+                            <p class="font-black dark-text text-sm">${tx.itemName} <span class="text-[9px] bg-slate-100 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded-md font-bold mr-1">${tx.globalTypeLabel}</span></p>
+                            <p class="text-xs text-slate-500 font-bold mt-0.5 truncate w-32">${tx.reason || tx.type}</p>
+                            <p class="text-[10px] text-gray-400 font-semibold mt-0.5">${formatDate(tx.date)}</p>
+                        </div>
+                    </div>
+                    <div class="text-left shrink-0">
+                        <p class="font-black ${amountColor} text-sm" dir="ltr">${sign}${formatCurrency(tx.amount)}</p>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            document.getElementById('global-history-list').innerHTML = ledgerHtml || '<div class="text-center p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700"><p class="text-sm dark-subtext font-bold">لم يتم العثور على أي عمليات مسجلة.</p></div>';
+        }
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            renderDetails(e.target.value);
+        });
+
+        function renderCharity() {
+            document.getElementById('list-charityIn').innerHTML = state.charityIn.map(i => createEntityCard(i, 'charityIn')).join('') || '<p class="text-sm dark-subtext font-bold text-center p-4">لا توجد تبرعات.</p>';
+            document.getElementById('list-charityOut').innerHTML = state.charityOut.map(i => createEntityCard(i, 'charityOut')).join('') || '<p class="text-sm dark-subtext font-bold text-center p-4">لا توجد مصروفات.</p>';
+        }
+
+        function renderCategories() {
+            document.getElementById('categories-list').innerHTML = state.categories.map(c => `
+                <div class="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl flex justify-between items-center border border-slate-100 dark:border-slate-700/50">
+                    <span class="font-bold dark-text text-sm">${c.name}</span>
+                    <button type="button" onclick="deleteItem('category', '${c.id}')" class="p-1.5 text-danger hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                </div>
+            `).join('') || '<p class="text-xs dark-subtext text-center py-4 font-bold">لا توجد أقسام مسجلة</p>';
+
+            const categorySelect = document.getElementById('transaction-category');
+            if (categorySelect) {
+                let optionsHtml = '<option value="عام">عام</option>';
+                let depts = state.categories.filter((v,i,a)=>a.findIndex(t=>(t.name === v.name))===i);
+                depts.forEach(c => { optionsHtml += `<option value="${c.name}">${c.name}</option>`; });
+                categorySelect.innerHTML = optionsHtml;
+            }
+        }
+
+        function renderCharts() {
+            if(!window.Chart) return;
+            const isDark = document.documentElement.classList.contains('dark');
+            Chart.defaults.color = isDark ? '#94A3B8' : '#64748B';
+            Chart.defaults.font.family = "'Cairo', sans-serif";
+            Chart.defaults.font.weight = 'bold';
+
+            const filteredToMe = state.debtsToMe.filter(d => state.currentDepartmentFilter === 'الكل' || d.category === state.currentDepartmentFilter);
+            const filteredIOwe = state.debtsIOwe.filter(d => state.currentDepartmentFilter === 'الكل' || d.category === state.currentDepartmentFilter);
+            const totOwe = filteredIOwe.reduce((sum, item) => sum + calculateCurrentAmount(item), 0);
+            const totMe = filteredToMe.reduce((sum, item) => sum + calculateCurrentAmount(item), 0);
+            
+            const debtsCtx = document.getElementById('debtsChart');
+            if (debtsCtx && !document.getElementById('debts-page').classList.contains('hidden')) {
+                if(chartsInstance.debts) chartsInstance.debts.destroy();
+                chartsInstance.debts = new Chart(debtsCtx, {
+                    type: 'doughnut',
+                    data: { labels: ['لك', 'عليك'], datasets: [{ data: [totMe, totOwe], backgroundColor: ['#10B981', '#F43F5E'], borderWidth: 0, cutout: '75%', borderRadius: 5 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } } }
+                });
+            }
+
+            const charityCtx = document.getElementById('charityChart');
+            const totCharityIn = state.charityIn.reduce((sum, i) => sum + calculateCurrentAmount(i), 0);
+            const totCharityOut = state.charityOut.reduce((sum, i) => sum + calculateCurrentAmount(i), 0);
+            if (charityCtx && !document.getElementById('charity-page').classList.contains('hidden')) {
+                if(chartsInstance.charity) chartsInstance.charity.destroy();
+                chartsInstance.charity = new Chart(charityCtx, {
+                    type: 'bar',
+                    data: { labels: ['الوارد', 'المصروف'], datasets: [{ data: [totCharityIn, totCharityOut], backgroundColor: ['#10B981', '#F43F5E'], borderRadius: 8, barThickness: 30 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false, grid: {display: false} }, x: { grid: { display: false }, border: {display: false} } } }
+                });
+            }
+        }
+
+        function setupDataSync() {
+            if(!state.userId) return;
+            const collections = { 'debtsToMe': 'toMe', 'debtsIOwe': 'iOwe', 'charityIn': 'charityIn', 'charityOut': 'charityOut', 'categories': 'categories' };
+            
+            for (const [colName, type] of Object.entries(collections)) {
+                const unsubscribe = onSnapshot(getCollectionPath(colName), (snap) => {
+                    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if(colName === 'debtsToMe') state.debtsToMe = data;
+                    if(colName === 'debtsIOwe') state.debtsIOwe = data;
+                    if(colName === 'charityIn') state.charityIn = data;
+                    if(colName === 'charityOut') state.charityOut = data;
+                    if(colName === 'categories') state.categories = data;
+                    debouncedRenderAll(); 
+                }, (error) => console.error("Snapshot error:", error));
+                state.firestoreListeners.push(unsubscribe);
+            }
+        }
+
+        async function handleFormSubmit(e, colType) {
+            e.preventDefault();
+            if(!state.userId) return;
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.disabled = true; btn.innerHTML = '<span class="animate-pulse">جاري الحفظ...</span>';
+            
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } 
-                // If no token, we wait for user action (Login / Guest)
-            } catch (error) {
-                console.error("Auth init error", error);
-                showToast("خطأ في تسجيل الدخول التلقائي", "error");
+                const { col } = getItemAndList(colType);
+                const item = {
+                    name: form.name.value,
+                    icon: form.icon ? form.icon.value : '👤',
+                    image: form.imageBase64 ? form.imageBase64.value : null,
+                    colorId: form.colorId ? form.colorId.value : 'blue',
+                    phone: form.phone ? form.phone.value : '',
+                    category: form.category ? form.category.value : 'عام',
+                    dueDate: form.dueDate ? form.dueDate.value : null,
+                    history: [{
+                        type: 'رصيد افتتاحي', amount: parseFloat(form.amount.value),
+                        reason: form.reason?.value || 'عملية جديدة', date: new Date(form.date.value).toISOString()
+                    }]
+                };
+                await addDoc(getCollectionPath(col), item);
+                showToast('تم حفظ الكارت بنجاح');
+                form.reset();
+                removeUploadedImage(`${form.id.split('-')[1]}-image-preview`, `${form.id.split('-')[1]}-imageBase64`, `${form.id.split('-')[1]}-image-placeholder`, `${form.id.split('-')[1]}-image-remove`);
+                setupColorPickers();
+                if(form.date) form.date.value = getTodayDateString();
+                if(['iOwe', 'toMe'].includes(colType)) closeAllModals();
+            } catch(e) { showToast('حدث خطأ أثناء الحفظ'); }
+            finally { btn.disabled = false; btn.textContent = originalText; }
+        }
+
+        document.getElementById('action-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!state.currentItemInfo || !state.userId) return;
+            const { type, id, action } = state.currentItemInfo;
+            const form = e.target;
+            try {
+                const amt = parseFloat(form.querySelector('#action-amount').value);
+                const tx = {
+                    type: action === 'add' ? 'إضافة رصيد' : 'خصم/سداد',
+                    amount: action === 'add' ? amt : -amt,
+                    reason: form.querySelector('#action-reason').value || (action === 'add' ? 'إضافة' : 'سداد'),
+                    date: new Date(form.querySelector('#action-date').value).toISOString()
+                };
+                await updateDoc(getDocPath(getItemAndList(type).col, id), { history: arrayUnion(tx) });
+                showToast('تمت العملية بنجاح');
+                closeAllModals();
+            } catch(e) { showToast('حدث خطأ'); }
+        };
+
+        document.getElementById('show-register').onclick = () => { document.getElementById('login-form-container').classList.add('hidden'); document.getElementById('register-form-container').classList.remove('hidden'); };
+        document.getElementById('show-login').onclick = () => { document.getElementById('register-form-container').classList.add('hidden'); document.getElementById('login-form-container').classList.remove('hidden'); };
+
+        const handleAuth = async (action, form) => {
+            const email = form[0].value; const pass = form[1].value;
+            try {
+                if(action === 'login') await signInWithEmailAndPassword(auth, email, pass);
+                else await createUserWithEmailAndPassword(auth, email, pass);
+            } catch(e) { showToast('يرجى التأكد من صحة البيانات المدخلة'); }
+        };
+        document.getElementById('login-form').onsubmit = (e) => { e.preventDefault(); handleAuth('login', e.target); };
+        document.getElementById('register-form').onsubmit = (e) => { e.preventDefault(); handleAuth('register', e.target); };
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+        document.getElementById('guest-login-btn').onclick = async () => { try { await signInAnonymously(auth); } catch (e) { showToast('حدث خطأ'); } };
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token).catch(()=>{});
             }
         };
 
         onAuthStateChanged(auth, (user) => {
+            state.firestoreListeners.forEach(u => u()); state.firestoreListeners = [];
+            const appUi = document.getElementById('app-container');
+            const authUi = document.getElementById('auth-screen');
             if (user) {
-                currentUser = user;
-                authScreen.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                appContainer.classList.add('flex');
-                menuUserEmail.textContent = user.isAnonymous ? "حساب زائر" : user.email;
-                
-                // Initialize today's date in inputs
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('trans_date').value = today;
-                document.querySelector('#form-charityIn input[type="date"]').value = today;
-                document.querySelector('#form-charityOut input[type="date"]').value = today;
-
-                loadData();
+                state.userId = user.uid;
+                appUi.classList.remove('hidden'); appUi.classList.add('flex');
+                authUi.style.display = 'none';
+                setupDataSync();
             } else {
-                currentUser = null;
-                appContainer.classList.add('hidden');
-                appContainer.classList.remove('flex');
-                authScreen.classList.remove('hidden');
-                if (unsubscribeTransactions) unsubscribeTransactions();
-                if (unsubscribeCharity) unsubscribeCharity();
+                state.userId = null;
+                appUi.classList.add('hidden'); appUi.classList.remove('flex');
+                authUi.style.display = 'flex';
+                window.hasShownOverdueAlert = false; // Reset on logout
             }
-            loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
         });
 
-        // Start App
-        initAuth();
-
-        // --- Event Listeners for Auth Forms ---
-        document.getElementById('show-register').addEventListener('click', () => {
-            document.getElementById('login-form-container').classList.add('hidden');
-            document.getElementById('register-form-container').classList.remove('hidden');
-        });
-
-        document.getElementById('show-login').addEventListener('click', () => {
-            document.getElementById('register-form-container').classList.add('hidden');
-            document.getElementById('login-form-container').classList.remove('hidden');
-        });
-
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
+        document.getElementById('add-transaction-form').onsubmit = (e) => handleFormSubmit(e, e.target['debt-type'].value);
+        document.getElementById('form-charityIn').onsubmit = (e) => handleFormSubmit(e, 'charityIn');
+        document.getElementById('form-charityOut').onsubmit = (e) => handleFormSubmit(e, 'charityOut');
+        
+        document.getElementById('add-category-form').onsubmit = async (e) => {
+            e.preventDefault(); if(!state.userId) return;
             try {
-                loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
-                await signInWithEmailAndPassword(auth, email, pass);
-                showToast("تم تسجيل الدخول بنجاح!");
-            } catch (error) {
-                loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-                showToast("خطأ: بيانات الدخول غير صحيحة", "error");
-            }
-        });
+                await addDoc(getCollectionPath('categories'), { name: e.target.categoryName.value });
+                showToast('تم إضافة القسم بنجاح'); e.target.reset();
+            } catch(e) { showToast('خطأ في الإضافة'); }
+        };
 
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
+        document.getElementById('edit-info-form').onsubmit = async (e) => {
             e.preventDefault();
-            const email = document.getElementById('register-email').value;
-            const pass = document.getElementById('register-password').value;
+            if (!state.currentItemInfo || !state.userId) return;
             try {
-                loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
-                await createUserWithEmailAndPassword(auth, email, pass);
-                showToast("تم إنشاء الحساب بنجاح!");
-            } catch (error) {
-                loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-                showToast("خطأ في إنشاء الحساب", "error");
-            }
-        });
+                await updateDoc(getDocPath(getItemAndList(state.currentItemInfo.type).col, state.currentItemInfo.id), { 
+                    name: document.getElementById('edit-info-name').value, 
+                    icon: document.getElementById('edit-info-icon').value,
+                    image: document.getElementById('edit-imageBase64').value,
+                    colorId: document.getElementById('edit-tx-color').value,
+                    phone: document.getElementById('edit-info-phone').value 
+                });
+                showToast('تم التعديل بنجاح'); closeAllModals();
+            } catch(err) { showToast('حدث خطأ'); }
+        };
 
-        document.getElementById('guest-login-btn').addEventListener('click', async () => {
-try {
-loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
-
-            // تفعيل وضع الدخول المحلي (بدون إنترنت) عند تشغيل الملف على الجهاز
-            if (typeof __firebase_config === 'undefined') {
-                setTimeout(() => {
-                    currentUser = { uid: 'local-offline-user', isAnonymous: true };
-                    authScreen.classList.add('hidden');
-                    appContainer.classList.remove('hidden');
-                    appContainer.classList.add('flex');
-                    menuUserEmail.textContent = "حساب محلي (بدون إنترنت)";
-                    
-                    const today = new Date().toISOString().split('T')[0];
-                    document.getElementById('trans_date').value = today;
-                    document.querySelector('#form-charityIn input[type="date"]').value = today;
-                    document.querySelector('#form-charityOut input[type="date"]').value = today;
-                    
-                    loadData();
-                    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-                    showToast("تم الدخول للوضع المحلي بنجاح!");
-                }, 500);
-                return;
-            }
-
-            await signInAnonymously(auth);
-            showToast("تم الدخول كزائر!");
-        } catch (error) {
-            loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-            showToast("حدث خطأ", "error");
-        }
-    });
-
-        window.logout = async () => {
-toggleSideMenu();
-// الخروج من الوضع المحلي
-if (typeof __firebase_config === 'undefined') {
-window.location.reload();
-return;
-}
-await signOut(auth);
+        const setupCalc = () => {
+            const btns = ['C','(',')','/','7','8','9','*','4','5','6','-','1','2','3','+','0','.','='];
+            const wrap = document.getElementById('calc-buttons');
+            let val = '0';
+            btns.forEach(b => {
+                const el = document.createElement('button');
+                el.textContent = b;
+                let c = 'p-3 rounded-2xl font-black text-lg active:scale-95 transition-transform shadow-sm border border-transparent ';
+                if(b==='C') c += 'bg-rose-500 text-white col-span-2 shadow-rose-500/20';
+                else if(b==='=') c += 'bg-primary text-white col-span-2 shadow-blue-500/20';
+                else if(['/','*','-','+'].includes(b)) c += 'bg-indigo-500 text-white shadow-indigo-500/20';
+                else c += 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700';
+                el.className = c;
+                el.onclick = () => {
+                    if(b==='C') val = '0';
+                    else if(b==='=') { try { val = String(new Function('return ' + val.replace(/[^-()\d/*+.]/g, ''))() || 0); } catch(e) { val = 'Error'; } } 
+                    else { if(val==='0' || val==='Error') val = b; else val += b; }
+document.getElementById('calc-display').textContent = val;
 };
-        document.getElementById('logout-btn').addEventListener('click', logout);
+wrap.appendChild(el);
+});
+};
 
+    window.exportDataToCSV = () => { showToast("سيتم تجهيز التقرير قريباً..."); };
 
-        // --- Data Fetching (Strict Private Paths) ---
-
-        function loadData() {
-            if (!currentUser) return;
-            const uid = currentUser.uid;
-
-            // Transactions (Debts)
-            const transRef = collection(db, 'artifacts', appId, 'users', uid, 'transactions');
-            unsubscribeTransactions = onSnapshot(transRef, (snapshot) => {
-                transactionsData = [];
-                snapshot.forEach(doc => {
-                    transactionsData.push({ id: doc.id, ...doc.data() });
-                });
-                // Sort by timestamp descending in memory
-                transactionsData.sort((a, b) => b.timestamp - a.timestamp);
-                updateDashboard();
-                updateDetailsPage();
-            }, (error) => {
-                console.error("Firestore error: ", error);
-                showToast("خطأ في جلب البيانات", "error");
-            });
-
-            // Charity
-            const charityRef = collection(db, 'artifacts', appId, 'users', uid, 'charity');
-            unsubscribeCharity = onSnapshot(charityRef, (snapshot) => {
-                charityData = [];
-                snapshot.forEach(doc => {
-                    charityData.push({ id: doc.id, ...doc.data() });
-                });
-                charityData.sort((a, b) => b.timestamp - a.timestamp);
-                updateCharityPage();
-            });
+    // --- ميزة تنزيل PDF الاحترافي ---
+    window.downloadPDF = () => {
+        if (state.allTransactionsFlat.length === 0) {
+            showToast("لا توجد بيانات للطباعة!", "error");
+            return;
         }
+        showToast("جاري تجهيز وتنزيل الملف PDF...");
 
-        // --- Logic & UI Updates ---
+        const printDiv = document.createElement('div');
+        printDiv.style.padding = '30px';
+        printDiv.style.fontFamily = "'Cairo', sans-serif";
+        printDiv.style.direction = 'rtl';
+        printDiv.style.color = '#0F172A';
+        printDiv.style.background = '#FFFFFF';
+        
+        let html = `
+            <h1 style="text-align: center; color: #2563EB; margin-bottom: 10px; font-size: 24px;">بنكوكي - التقرير الشامل للسجلات</h1>
+            <p style="text-align: center; margin-bottom: 30px; font-size: 14px; color: #64748B;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}</p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;" border="1">
+                <tr style="background-color: #F8FAFC;">
+                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">الاسم / القسم</th>
+                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">النوع</th>
+                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">البيان</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">المبلغ</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">التاريخ</th>
+                </tr>
+        `;
 
-        function updateDashboard() {
-            let totalToMe = 0;
-            let totalIOwe = 0;
-            
-            transactionsData.forEach(t => {
-                const amt = parseFloat(t.amount) || 0;
-                if (t.type === 'to_me') totalToMe += amt;
-                else if (t.type === 'i_owe') totalIOwe += amt;
-            });
-
-            const net = totalToMe - totalIOwe;
-            
-            document.getElementById('total-to-me').innerText = totalToMe.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            document.getElementById('total-i-owe').innerText = totalIOwe.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            
-            const treasuryEl = document.getElementById('total-treasury');
-            treasuryEl.innerText = Math.abs(net).toLocaleString('en-US', { minimumFractionDigits: 2 });
-            
-            if (net >= 0) {
-                treasuryEl.className = "text-4xl font-black tracking-tight mt-1 text-emerald-400";
-            } else {
-                treasuryEl.className = "text-4xl font-black tracking-tight mt-1 text-rose-400";
-            }
-
-            renderDashboardActivities();
-            drawDebtsChart(totalToMe, totalIOwe);
-        }
-
-        function renderDashboardActivities() {
-            const list = document.getElementById('dashboard-activities-list');
-            list.innerHTML = '';
-            
-            const recent = transactionsData.slice(0, 5);
-            if (recent.length === 0) {
-                list.innerHTML = '<p class="text-sm text-center dark-subtext py-4">لا توجد عمليات بعد</p>';
-                return;
-            }
-
-            recent.forEach(t => {
-                const isToMe = t.type === 'to_me';
-                const colorClass = isToMe ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20';
-                const sign = isToMe ? '+' : '-';
-                
-                list.innerHTML += `
-                    <div class="dark-card p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex justify-between items-center">
-                        <div>
-                            <p class="font-bold dark-text text-sm">${escapeHTML(t.entity)}</p>
-                            <p class="text-xs dark-subtext">${t.date}</p>
-                        </div>
-                        <div class="px-3 py-1.5 rounded-xl ${colorClass} font-black text-sm" dir="ltr">
-                            ${sign}${parseFloat(t.amount).toLocaleString('en-US')}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function updateDetailsPage() {
-            // Group by entity
-            const entities = {};
-            transactionsData.forEach(t => {
-                if (!entities[t.entity]) entities[t.entity] = { toMe: 0, iOwe: 0, ops: [] };
-                const amt = parseFloat(t.amount);
-                if (t.type === 'to_me') entities[t.entity].toMe += amt;
-                else entities[t.entity].iOwe += amt;
-                entities[t.entity].ops.push(t);
-            });
-
-            const listToMe = document.getElementById('list-to-me');
-            const listIOwe = document.getElementById('list-i-owe');
-            listToMe.innerHTML = '';
-            listIOwe.innerHTML = '';
-
-            Object.keys(entities).forEach(name => {
-                const e = entities[name];
-                const net = e.toMe - e.iOwe;
-                if (net === 0) return; // Settled
-
-                const html = `
-                    <div class="dark-card p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 font-bold text-lg">${name.charAt(0)}</div>
-                            <div>
-                                <p class="font-bold dark-text text-sm">${escapeHTML(name)}</p>
-                                <p class="text-[10px] dark-subtext">${e.ops.length} عمليات</p>
-                            </div>
-                        </div>
-                        <div class="font-black text-lg ${net > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}" dir="ltr">
-                            ${Math.abs(net).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </div>
-                    </div>
-                `;
-                
-                if (net > 0) listToMe.innerHTML += html;
-                else listIOwe.innerHTML += html;
-            });
-
-            if(listToMe.innerHTML === '') listToMe.innerHTML = '<p class="text-xs text-slate-400">لا يوجد بيانات</p>';
-            if(listIOwe.innerHTML === '') listIOwe.innerHTML = '<p class="text-xs text-slate-400">لا يوجد بيانات</p>';
-
-            // Global Ledger
-            const ledger = document.getElementById('global-history-list');
-            ledger.innerHTML = '';
-            transactionsData.forEach(t => {
-                const isToMe = t.type === 'to_me';
-                const colorText = isToMe ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
-                ledger.innerHTML += `
-                    <div class="dark-card p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex justify-between items-center group">
-                        <div>
-                            <p class="font-bold dark-text text-sm">${escapeHTML(t.entity)}</p>
-                            <div class="flex gap-2 items-center text-xs dark-subtext mt-1">
-                                <span>${t.date}</span>
-                                ${t.note ? `<span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full truncate max-w-[100px]">${escapeHTML(t.note)}</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <p class="font-black ${colorText}" dir="ltr">${parseFloat(t.amount).toLocaleString('en-US')}</p>
-                            <button onclick="deleteDocItem('transactions', '${t.id}')" class="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function updateCharityPage() {
-            let totalIn = 0;
-            let totalOut = 0;
-            const list = document.getElementById('list-charity');
-            list.innerHTML = '';
-
-            if (charityData.length === 0) {
-                list.innerHTML = '<p class="text-sm text-center dark-subtext py-4">لم يتم تسجيل أي عمليات بعد</p>';
-            }
-
-            charityData.forEach(c => {
-                const amt = parseFloat(c.amount);
-                const isIn = c.type === 'in';
-                if (isIn) totalIn += amt; else totalOut += amt;
-
-                const colorText = isIn ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
-                const sign = isIn ? '+' : '-';
-
-                list.innerHTML += `
-                    <div class="dark-card p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex justify-between items-center group">
-                        <div class="flex items-center gap-3">
-                            <div class="text-2xl">${c.icon || '📌'}</div>
-                            <div>
-                                <p class="font-bold dark-text text-sm">${escapeHTML(c.name)}</p>
-                                <p class="text-[10px] dark-subtext">${c.date}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <p class="font-black ${colorText}" dir="ltr">${sign}${amt.toLocaleString('en-US')}</p>
-                            <button onclick="deleteDocItem('charity', '${c.id}')" class="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            drawCharityChart(totalIn, totalOut);
-        }
-
-        // --- Form Submissions ---
-
-        document.getElementById('transaction-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-            
-            const type = document.querySelector('input[name="trans_type"]:checked').value;
-            const entity = document.getElementById('trans_entity').value;
-            const amount = parseFloat(document.getElementById('trans_amount').value);
-            const date = document.getElementById('trans_date').value;
-            const note = document.getElementById('trans_note').value;
-
-            try {
-                const ref = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions');
-                await addDoc(ref, {
-                    type, entity, amount, date, note, timestamp: Date.now()
-                });
-                showToast("تم إضافة المعاملة بنجاح");
-                closeModal('add-transaction-modal');
-                document.getElementById('transaction-form').reset();
-                document.getElementById('trans_date').value = new Date().toISOString().split('T')[0];
-            } catch (err) {
-                console.error(err);
-                showToast("حدث خطأ أثناء الحفظ", "error");
-            }
+        state.allTransactionsFlat.forEach(tx => {
+            const color = tx.amount > 0 ? 'color: #10B981;' : (tx.amount < 0 ? 'color: #EF4444;' : 'color: #64748B;');
+            const sign = tx.amount > 0 ? '+' : '';
+            html += `
+                <tr>
+                    <td style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">
+                        <strong>${escapeHTML(tx.itemName)}</strong><br>
+                        <span style="font-size: 10px; color: #64748B;">${escapeHTML(tx.category || 'عام')}</span>
+                    </td>
+                    <td style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">${escapeHTML(tx.globalTypeLabel)}</td>
+                    <td style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">${escapeHTML(tx.reason || tx.type)}</td>
+                    <td style="padding: 10px; text-align: center; direction: ltr; font-weight: bold; ${color} border: 1px solid #E2E8F0;">
+                        ${sign}${formatCurrency(Math.abs(tx.amount))}
+                    </td>
+                    <td style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">${formatDate(tx.date)}</td>
+                </tr>
+            `;
         });
+        html += `</table>`;
+        printDiv.innerHTML = html;
 
-        document.getElementById('form-charityIn').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await saveCharity('in', e.target);
-        });
+        html2pdf().set({
+            margin: 0.5,
+            filename: 'Bankoki_Report.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        }).from(printDiv).save().then(() => {
+            closeSideMenu();
+        }).catch(e => showToast("حدث خطأ أثناء التنزيل", "error"));
+    };
 
-        document.getElementById('form-charityOut').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await saveCharity('out', e.target);
-        });
+    // --- ميزة تنزيل نسخة احتياطية (تصدير لملف JSON) كأمان إضافي ---
+    window.exportDataToJSON = () => {
+        const dataToExport = {
+            app: "Bankoki",
+            exportDate: new Date().toISOString(),
+            debtsToMe: state.debtsToMe,
+            debtsIOwe: state.debtsIOwe,
+            charityIn: state.charityIn,
+            charityOut: state.charityOut,
+            categories: state.categories
+        };
+        const dataStr = JSON.stringify(dataToExport);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Bankoki_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("تم تنزيل النسخة الاحتياطية بأمان!");
+        closeSideMenu();
+    };
 
-        async function saveCharity(type, form) {
-            if (!currentUser) return;
-            const icon = form.icon.value || (type==='in'?'🤝':'🍲');
-            const name = form.name.value;
-            const amount = parseFloat(form.amount.value);
-            const date = form.date.value;
-
-            try {
-                const ref = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'charity');
-                await addDoc(ref, {
-                    type, icon, name, amount, date, timestamp: Date.now()
-                });
-                showToast(type === 'in' ? "تم حفظ التبرع" : "تم تسجيل المصروف");
-                form.reset();
-                form.date.value = new Date().toISOString().split('T')[0];
-            } catch (err) {
-                showToast("حدث خطأ أثناء الحفظ", "error");
-            }
-        }
-
-        window.deleteDocItem = async (colName, id) => {
-            if(!currentUser) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, colName, id));
-                showToast("تم الحذف بنجاح");
-            } catch(e) {
-                showToast("خطأ في الحذف", "error");
-            }
-        }
-
-        // --- Charts ---
-
-        function drawDebtsChart(toMe, iOwe) {
-            const ctx = document.getElementById('debtsChart').getContext('2d');
-            if (debtsChartInstance) debtsChartInstance.destroy();
-            
-            if (toMe === 0 && iOwe === 0) return; // empty state
-
-            debtsChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['أرصدة لي', 'أرصدة علي'],
-                    datasets: [{
-                        data: [toMe, iOwe],
-                        backgroundColor: ['#10B981', '#EF4444'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%',
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
+    document.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+            setupCalc();
+            setupColorPickers();
+            document.querySelectorAll('input[type="date"]').forEach(el => {
+                if(el.name !== 'dueDate') el.value = getTodayDateString();
             });
-        }
-
-        function drawCharityChart(inAmt, outAmt) {
-            const ctx = document.getElementById('charityChart').getContext('2d');
-            if (charityChartInstance) charityChartInstance.destroy();
-            
-            if (inAmt === 0 && outAmt === 0) return;
-
-            charityChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['الوارد', 'المنصرف'],
-                    datasets: [{
-                        data: [inAmt, outAmt],
-                        backgroundColor: ['#10B981', '#EF4444'],
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { display: false },
-                        x: { grid: { display: false }, ticks: { font: { family: 'Cairo' }, color: isDarkMode ? '#94A3B8' : '#64748B' } }
-                    }
-                }
-            });
-        }
-
-
-        // --- Navigation & UI Utilities ---
-
-        window.showPage = (pageId) => {
-            pages.forEach(p => {
-                document.getElementById(`${p}-page`).classList.add('hidden');
-                document.getElementById(`nav-${p}`).classList.remove('active');
-            });
-            document.getElementById(`${pageId}-page`).classList.remove('hidden');
-            document.getElementById(`nav-${pageId}`).classList.add('active');
-        };
-
-        window.switchDetailsTab = (tab) => {
-            document.getElementById('tab-entities').classList.remove('active', 'text-slate-500');
-            document.getElementById('tab-ledger').classList.remove('active', 'text-slate-500');
-            
-            if(tab === 'entities') {
-                document.getElementById('tab-entities').classList.add('active');
-                document.getElementById('tab-ledger').classList.add('text-slate-500');
-                document.getElementById('content-entities').classList.remove('hidden');
-                document.getElementById('content-ledger').classList.add('hidden');
-            } else {
-                document.getElementById('tab-ledger').classList.add('active');
-                document.getElementById('tab-entities').classList.add('text-slate-500');
-                document.getElementById('content-ledger').classList.remove('hidden');
-                document.getElementById('content-entities').classList.add('hidden');
-            }
-        };
-
-        window.openAddTransactionModal = () => {
-            document.getElementById('modal-backdrop').classList.add('open');
-            document.getElementById('add-transaction-modal').classList.add('open');
-        };
-
-        window.closeModal = (id) => {
-            document.getElementById('modal-backdrop').classList.remove('open');
-            document.getElementById(id).classList.remove('open');
-        };
-
-        window.toggleSideMenu = () => {
-            const menu = document.getElementById('side-menu');
-            const backdrop = document.getElementById('modal-backdrop');
-            
-            if (menu.classList.contains('translate-x-full')) {
-                menu.classList.remove('translate-x-full');
-                backdrop.classList.add('open');
-            } else {
-                menu.classList.add('translate-x-full');
-                backdrop.classList.remove('open');
-            }
-        };
-
-        // Dark mode
-        window.toggleDarkMode = () => {
-            document.documentElement.classList.toggle('dark');
-            isDarkMode = document.documentElement.classList.contains('dark');
-            document.getElementById('dark-mode-icon').innerText = isDarkMode ? '☀️' : '🌙';
-            document.getElementById('dark-mode-text').innerText = isDarkMode ? 'تفعيل الوضع النهاري' : 'تفعيل الوضع الليلي';
-            if(debtsChartInstance) debtsChartInstance.update();
-            if(charityChartInstance) charityChartInstance.update();
-        };
-
-        // Close things when backdrop clicked
-        document.getElementById('modal-backdrop').addEventListener('click', () => {
-            closeModal('add-transaction-modal');
-            document.getElementById('side-menu').classList.add('translate-x-full');
+            showPage('debts'); 
         });
-
-        window.showToast = (msg, type = 'success') => {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast-msg ${type === 'error' ? '!bg-red-500' : ''}`;
-            toast.innerText = msg;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        };
-
-        function escapeHTML(str) {
-            if(!str) return '';
-            return str.replace(/[&<>'"]/g, tag => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-            }[tag]));
-        }
-
     </script>
 </body>
 </html>
