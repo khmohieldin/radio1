@@ -10,8 +10,7 @@
     <title>بنكوكي - إدارة الأموال باحترافية</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -423,14 +422,10 @@
             <p id="menu-user-email" class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">زائر</p>
         </div>
         <div class="p-4 flex-1">
-<button onclick="downloadPDF()" class="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-right dark-text font-bold mb-2">
-<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-<span>تنزيل السجلات (PDF)</span>
-</button>
-<button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-right dark-text font-bold mb-2">
-<span class="text-xl" id="dark-mode-icon">🌙</span>
-<span id="dark-mode-text">تفعيل الوضع الليلي</span>
-</button>
+            <button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-right dark-text font-bold mb-2">
+                <span class="text-xl" id="dark-mode-icon">🌙</span>
+                <span id="dark-mode-text">تفعيل الوضع الليلي</span>
+            </button>
             <button onclick="logout()" class="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-right text-danger font-bold">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 تسجيل الخروج
@@ -443,19 +438,18 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, query, orderBy, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Firebase Configuration (from Canvas environment)
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    
-    // تفعيل وضع الأوفلاين (العمل بدون إنترنت)
-    const db = initializeFirestore(app, {
-        localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
-    });
-    
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Firebase Configuration (from Canvas environment)
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+apiKey: "AIzaSy_Offline_Dummy_Key_Prevent_Crash_123",
+projectId: "offline-local-project",
+appId: "1:123456789:web:abcdef"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // App State
         let currentUser = null;
@@ -559,20 +553,47 @@
         });
 
         document.getElementById('guest-login-btn').addEventListener('click', async () => {
-            try {
-                loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
-                await signInAnonymously(auth);
-                showToast("تم الدخول كزائر!");
-            } catch (error) {
-                loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-                showToast("حدث خطأ", "error");
+try {
+loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
+
+            // تفعيل وضع الدخول المحلي (بدون إنترنت) عند تشغيل الملف على الجهاز
+            if (typeof __firebase_config === 'undefined') {
+                setTimeout(() => {
+                    currentUser = { uid: 'local-offline-user', isAnonymous: true };
+                    authScreen.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    appContainer.classList.add('flex');
+                    menuUserEmail.textContent = "حساب محلي (بدون إنترنت)";
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('trans_date').value = today;
+                    document.querySelector('#form-charityIn input[type="date"]').value = today;
+                    document.querySelector('#form-charityOut input[type="date"]').value = today;
+                    
+                    loadData();
+                    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+                    showToast("تم الدخول للوضع المحلي بنجاح!");
+                }, 500);
+                return;
             }
-        });
+
+            await signInAnonymously(auth);
+            showToast("تم الدخول كزائر!");
+        } catch (error) {
+            loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+            showToast("حدث خطأ", "error");
+        }
+    });
 
         window.logout = async () => {
-            toggleSideMenu();
-            await signOut(auth);
-        };
+toggleSideMenu();
+// الخروج من الوضع المحلي
+if (typeof __firebase_config === 'undefined') {
+window.location.reload();
+return;
+}
+await signOut(auth);
+};
         document.getElementById('logout-btn').addEventListener('click', logout);
 
 
@@ -904,97 +925,9 @@
         }
 
 
-        // --- PDF Export Utility ---
-window.downloadPDF = () => {
-if (!currentUser) {
-showToast("يجب تسجيل الدخول أولاً", "error");
-return;
-}
-showToast("جاري تجهيز وتنزيل الملف...");
+        // --- Navigation & UI Utilities ---
 
-        // إنشاء عنصر مخفي لبناء شكل التقرير الذي سيتم تحويله
-        const printDiv = document.createElement('div');
-        printDiv.style.padding = '30px';
-        printDiv.style.fontFamily = "'Cairo', sans-serif";
-        printDiv.style.direction = 'rtl';
-        printDiv.style.color = '#0F172A';
-        printDiv.style.background = '#FFFFFF';
-        
-        let html = `
-            <h1 style="text-align: center; color: #2563EB; margin-bottom: 10px; font-size: 24px;">بنكوكي - تقرير السجلات الشامل</h1>
-            <p style="text-align: center; margin-bottom: 30px; font-size: 14px; color: #64748B;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}</p>
-            
-            <h2 style="border-bottom: 2px solid #10B981; padding-bottom: 5px; color: #10B981; margin-bottom: 15px; font-size: 18px;">سجل الديون والمعاملات</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 14px;" border="1">
-                <tr style="background-color: #F8FAFC;">
-                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">الاسم / الجهة</th>
-                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">النوع</th>
-                    <th style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">المبلغ</th>
-                    <th style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">التاريخ</th>
-                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">ملاحظات</th>
-                </tr>
-        `;
-
-        transactionsData.forEach(t => {
-            const typeText = t.type === 'to_me' ? 'لي (أطلبه)' : 'علي (أدفعه)';
-            const color = t.type === 'to_me' ? 'color: #10B981;' : 'color: #EF4444;';
-            html += `
-                <tr>
-                    <td style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">${escapeHTML(t.entity)}</td>
-                    <td style="padding: 10px; text-align: right; font-weight: bold; ${color} border: 1px solid #E2E8F0;">${typeText}</td>
-                    <td style="padding: 10px; text-align: center; direction: ltr; font-weight: bold; border: 1px solid #E2E8F0;">${parseFloat(t.amount).toLocaleString('en-US')}</td>
-                    <td style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">${t.date}</td>
-                    <td style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">${escapeHTML(t.note || '-')}</td>
-                </tr>
-            `;
-        });
-        
-        html += `
-            </table>
-            <h2 style="border-bottom: 2px solid #3B82F6; padding-bottom: 5px; color: #3B82F6; margin-bottom: 15px; font-size: 18px;">سجل صندوق الخير</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;" border="1">
-                <tr style="background-color: #F8FAFC;">
-                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">البيان</th>
-                    <th style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">النوع</th>
-                    <th style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">المبلغ</th>
-                    <th style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">التاريخ</th>
-                </tr>
-        `;
-
-        charityData.forEach(c => {
-            const typeText = c.type === 'in' ? 'وارد' : 'منصرف';
-            const color = c.type === 'in' ? 'color: #10B981;' : 'color: #EF4444;';
-            html += `
-                <tr>
-                    <td style="padding: 10px; text-align: right; border: 1px solid #E2E8F0;">${c.icon || ''} ${escapeHTML(c.name)}</td>
-                    <td style="padding: 10px; text-align: right; font-weight: bold; ${color} border: 1px solid #E2E8F0;">${typeText}</td>
-                    <td style="padding: 10px; text-align: center; direction: ltr; font-weight: bold; border: 1px solid #E2E8F0;">${parseFloat(c.amount).toLocaleString('en-US')}</td>
-                    <td style="padding: 10px; text-align: center; border: 1px solid #E2E8F0;">${c.date}</td>
-                </tr>
-            `;
-        });
-
-        html += `</table>`;
-        printDiv.innerHTML = html;
-
-        const opt = {
-            margin:       [0.5, 0.5, 0.5, 0.5],
-            filename:     'Bankoki-Report.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
-
-        html2pdf().set(opt).from(printDiv).save().then(() => {
-            showToast("تم تنزيل الملف بنجاح!");
-        }).catch(() => {
-            showToast("حدث خطأ أثناء تحميل الـ PDF", "error");
-        });
-    };
-
-    // --- Navigation & UI Utilities ---
-
-    window.showPage = (pageId) => {
+        window.showPage = (pageId) => {
             pages.forEach(p => {
                 document.getElementById(`${p}-page`).classList.add('hidden');
                 document.getElementById(`nav-${p}`).classList.remove('active');
