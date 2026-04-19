@@ -2633,16 +2633,145 @@
                 });
             }
 
-            editFullTx(logPath, parentPath, oldType, oldAmt, oldDesc) {
-                document.getElementById('edit-tx-path').value = logPath;
-                document.getElementById('edit-tx-parent-path').value = parentPath;
-                document.getElementById('edit-tx-old-type').value = oldType;
-                document.getElementById('edit-tx-old-amt').value = oldAmt;
-                document.getElementById('edit-tx-type').value = oldType;
-                document.getElementById('edit-tx-amt').value = oldAmt;
-                document.getElementById('edit-tx-desc').value = oldDesc;
-                document.getElementById('edit-tx-modal').classList.remove('hidden');
+            downloadFinancialPDF() {
+if(!this.allTxs || this.allTxs.length === 0) return toast('لا توجد بيانات لتحميلها.. يرجى الانتظار حتى تكتمل القراءة.', 'warning');
+
+            toast('جاري تجهيز تقرير PDF احترافي للطباعة..', 'info');
+            
+            let totalIn = 0, totalOut = 0;
+            this.allTxs.forEach(x => { if(x.ty==='إيداع') totalIn+=x.am; else if(x.ty==='صرف') totalOut+=x.am; });
+            
+            let html = `
+            <html dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <title>التقرير المالي - جمعية وبنك دم شبراسندى</title>
+                <link href="[https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&display=swap](https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&display=swap)" rel="stylesheet">
+                <style>
+                    body { font-family: 'Cairo', sans-serif, Arial; direction: rtl; padding: 20px; color: #000; background: #fff; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #10b981; padding-bottom: 20px; }
+                    .header h1 { font-size: 28px; color: #0f172a; margin: 0; }
+                    .header h2 { font-size: 20px; color: #475569; margin: 10px 0; }
+                    .header p { font-size: 14px; color: #64748b; margin: 0; }
+                    .summary { display: flex; justify-content: space-between; margin-bottom: 30px; }
+                    .box { padding: 15px; border-radius: 12px; width: 48%; text-align: center; border: 2px solid; }
+                    .box-in { background: #ecfdf5; border-color: #10b981; }
+                    .box-out { background: #fff1f2; border-color: #e11d48; }
+                    .box h3 { margin: 0 0 10px 0; font-size: 18px; }
+                    .box-in h3 { color: #047857; }
+                    .box-out h3 { color: #be123c; }
+                    .box p { margin: 0; font-size: 24px; font-weight: bold; }
+                    .box-in p { color: #059669; }
+                    .box-out p { color: #e11d48; }
+                    .group { margin-bottom: 30px; page-break-inside: avoid; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+                    .group-title { background: #f8fafc; padding: 15px; border-bottom: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+                    .group-title h3 { margin: 0; font-size: 18px; color: #0f172a; }
+                    .group-title span { font-size: 15px; font-weight: bold; }
+                    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                    th { background: #e2e8f0; color: #1e293b; padding: 12px; text-align: right; border-bottom: 2px solid #cbd5e1; }
+                    td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #333; }
+                    tr:nth-child(even) { background-color: #f8fafc; }
+                    .text-in { color: #059669; font-weight: bold; }
+                    .text-out { color: #e11d48; font-weight: bold; }
+                    @media print {
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        @page { margin: 10mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>جمعية وبنك دم شبراسندى</h1>
+                    <h2>السجل المالي الشامل للإيرادات والمصروفات</h2>
+                    <p>تاريخ استخراج التقرير: ${new Date().toLocaleString('ar-EG')}</p>
+                </div>
+                
+                <div class="summary">
+                    <div class="box box-in">
+                        <h3>إجمالي الوارد (إيداع)</h3>
+                        <p>${totalIn.toLocaleString('ar-EG')} ج.م</p>
+                    </div>
+                    <div class="box box-out">
+                        <h3>إجمالي الصادر (خصم)</h3>
+                        <p>${totalOut.toLocaleString('ar-EG')} ج.م</p>
+                    </div>
+                </div>
+            `;
+
+            const grouped = {};
+            this.allTxs.forEach(tx => {
+                const key = `${tx.st} - ${tx.sn}`;
+                if(!grouped[key]) grouped[key] = [];
+                grouped[key].push(tx);
+            });
+
+            for(const [groupName, txs] of Object.entries(grouped)) {
+                let gIn = 0, gOut = 0;
+                txs.forEach(x => { if(x.ty==='إيداع') gIn+=x.am; else if(x.ty==='صرف') gOut+=x.am; });
+                
+                html += `
+                    <div class="group">
+                        <div class="group-title">
+                            <h3>${groupName}</h3>
+                            <span>وارد: <span class="text-in">${gIn.toLocaleString('ar-EG')} ج.م</span> | منصرف: <span class="text-out">${gOut.toLocaleString('ar-EG')} ج.م</span></span>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">التاريخ والوقت</th>
+                                    <th style="width: 10%;">النوع</th>
+                                    <th style="width: 15%;">المبلغ</th>
+                                    <th style="width: 55%;">بيان المعاملة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                txs.forEach(tx => {
+                    const typeClass = tx.ty === 'إيداع' ? 'text-in' : 'text-out';
+                    html += `
+                        <tr>
+                            <td dir="ltr" style="text-align: right;">${tx.dt?.toLocaleString('ar-EG')||'-'}</td>
+                            <td class="${typeClass}">${tx.ty}</td>
+                            <td class="${typeClass}">${tx.am.toLocaleString('ar-EG')}</td>
+                            <td>${tx.ds}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             }
+
+            html += `
+                <div style="text-align: center; margin-top: 40px; color: #94a3b8; font-size: 12px; font-weight: bold;">
+                    تم استخراج هذا التقرير آلياً من النظام المالي الإلكتروني.
+                </div>
+            </body></html>`;
+
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.open();
+                printWindow.document.write(html);
+                printWindow.document.close();
+                
+                printWindow.onload = function() {
+                    printWindow.focus();
+                    setTimeout(() => { printWindow.print(); }, 500);
+                };
+            } else {
+                toast('يرجى السماح بالنوافذ المنبثقة (Pop-ups) لعرض التقرير', 'warning');
+            }
+        }
+
+        editFullTx(logPath, parentPath, oldType, oldAmt, oldDesc) {
+            document.getElementById('edit-tx-path').value = logPath; document.getElementById('edit-tx-parent-path').value = parentPath; document.getElementById('edit-tx-old-type').value = oldType; document.getElementById('edit-tx-old-amt').value = oldAmt;
+            document.getElementById('edit-tx-type').value = oldType; document.getElementById('edit-tx-amt').value = oldAmt; document.getElementById('edit-tx-desc').value = oldDesc;
+            document.getElementById('edit-tx-modal').classList.remove('hidden');
+        }
             async saveEditTx() {
                 const logPath = document.getElementById('edit-tx-path').value;
                 const parentPath = document.getElementById('edit-tx-parent-path').value;
