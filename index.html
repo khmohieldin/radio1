@@ -2706,14 +2706,20 @@ if(!this.allTxs || this.allTxs.length === 0) return toast('لا توجد بيا�
             });
 
             for(const [groupName, txs] of Object.entries(grouped)) {
-                let gIn = 0, gOut = 0;
-                txs.forEach(x => { if(x.ty==='إيداع') gIn+=x.am; else if(x.ty==='صرف') gOut+=x.am; });
-                
+let gIn = 0, gOut = 0;
+txs.forEach(x => { if(x.ty==='إيداع') gIn+=x.am; else if(x.ty==='صرف') gOut+=x.am; });
+let gNet = gIn - gOut;
+let netColor = gNet >= 0 ? '#0284c7' : '#e11d48'; // أزرق للموجب، أحمر للسالب
+
                 html += `
                     <div class="group">
                         <div class="group-title">
                             <h3>${groupName}</h3>
-                            <span>وارد: <span class="text-in">${gIn.toLocaleString('ar-EG')} ج.م</span> | منصرف: <span class="text-out">${gOut.toLocaleString('ar-EG')} ج.م</span></span>
+                            <span>
+                                وارد: <span class="text-in">${gIn.toLocaleString('ar-EG')} ج.م</span> | 
+                                منصرف: <span class="text-out">${gOut.toLocaleString('ar-EG')} ج.م</span> | 
+                                <span style="color: ${netColor}; font-weight: 900; background: #e0f2fe; padding: 2px 8px; border-radius: 4px; border: 1px solid #bae6fd;">صافي المتبقي: ${gNet.toLocaleString('ar-EG')} ج.م</span>
+                            </span>
                         </div>
                         <table>
                             <thead>
