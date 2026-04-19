@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -543,12 +545,10 @@
                     <a href="https://wa.me/201018282460" target="_blank" class="flex items-center gap-2 text-gray-500 hover:text-green-500 transition-colors" title="واتساب">
                         <i data-lucide="message-circle" class="w-4 h-4"></i><span>واتساب</span>
                     </a>
-                                        <a href="https://www.facebook.com/khaledmohyalden" target="_blank" class="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors" title="فيسبوك">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0 -1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>فيسبوك</span>
-                    </a>
+                                                                                <a href="https://www.facebook.com/khaledmohyalden" target="_blank" class="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors" title="فيسبوك">
+                        <i data-lucide="facebook" class="w-4 h-4"></i>
+                        <span>فيسبوك</span>
+                    </a>
                 </div>
             </div>
         </footer>
@@ -952,19 +952,62 @@
             }
         };
 
-                window.playQuranRadio = () => {            playingGroupId = null;            currentIndex = -2;             localStorage.setItem('lastTrackIndex', -2);            localStorage.removeItem('lastPlayingGroupId');
-const quranUrl = 'https://n03.radiojar.com/8s5u5tpdtwzuv?_t=' + new Date().getTime();            window.safeChangeTrack(quranUrl);             pendingRestoreTime = false;            window.initAudioBooster();                        window.safePlayAudio();            window.updatePlayerUI();        };
+                window.playQuranRadio = () => {
+            playingGroupId = null;
+            currentIndex = -2; 
+            localStorage.setItem('lastTrackIndex', -2);
+            localStorage.removeItem('lastPlayingGroupId');
 
-        window.playDramaMixRadio = () => {            playingGroupId = null;            currentIndex = -4;             localStorage.setItem('lastTrackIndex', -4);            localStorage.removeItem('lastPlayingGroupId');
-window.safeChangeTrack('https://stream.zeno.fm/egynebf171zuv?_t=' + new Date().getTime());             pendingRestoreTime = false;            window.initAudioBooster();                        window.safePlayAudio();            window.updatePlayerUI();        };
+                        const quranUrl = 'https://n03.radiojar.com/8s5u5tpdtwzuv?_t=' + new Date().getTime();
+            window.safeChangeTrack(quranUrl);  
+            pendingRestoreTime = false;
+            window.initAudioBooster();
+            
+            window.safePlayAudio();
+            window.updatePlayerUI();
+        };
 
-        window.playNewsRadio = () => {            playingGroupId = null;            currentIndex = -5;             localStorage.setItem('lastTrackIndex', -5);            localStorage.removeItem('lastPlayingGroupId');
-window.safeChangeTrack('https://radio.skynewsarabia.com/stream/radio/skynewsarabia?_t=' + new Date().getTime());            pendingRestoreTime = false;            window.initAudioBooster();
-window.safePlayAudio();            window.updatePlayerUI();        };
+        window.playDramaMixRadio = () => {
+            playingGroupId = null;
+            currentIndex = -4; 
+            localStorage.setItem('lastTrackIndex', -4);
+            localStorage.removeItem('lastPlayingGroupId');
 
-        window.playMonteCarloRadio = () => {            playingGroupId = null;            currentIndex = -6;             localStorage.setItem('lastTrackIndex', -6);            localStorage.removeItem('lastPlayingGroupId');
-window.safeChangeTrack('https://montecarlodoualiya128k.ice.infomaniak.ch/mc-doualiya.mp3?_t=' + new Date().getTime());            pendingRestoreTime = false;            window.initAudioBooster();
-window.safePlayAudio();            window.updatePlayerUI();        };
+                        window.safeChangeTrack('https://stream.zeno.fm/egynebf171zuv?_t=' + new Date().getTime());  
+            pendingRestoreTime = false;
+            window.initAudioBooster();
+            
+            window.safePlayAudio();
+            window.updatePlayerUI();
+        };
+
+        window.playNewsRadio = () => {
+            playingGroupId = null;
+            currentIndex = -5; 
+            localStorage.setItem('lastTrackIndex', -5);
+            localStorage.removeItem('lastPlayingGroupId');
+
+                        window.safeChangeTrack('https://radio.skynewsarabia.com/stream/radio/skynewsarabia?_t=' + new Date().getTime());
+            pendingRestoreTime = false;
+            window.initAudioBooster();
+
+            window.safePlayAudio();
+            window.updatePlayerUI();
+        };
+
+        window.playMonteCarloRadio = () => {
+            playingGroupId = null;
+            currentIndex = -6; 
+            localStorage.setItem('lastTrackIndex', -6);
+            localStorage.removeItem('lastPlayingGroupId');
+
+                        window.safeChangeTrack('https://montecarlodoualiya128k.ice.infomaniak.ch/mc-doualiya.mp3?_t=' + new Date().getTime());
+            pendingRestoreTime = false;
+            window.initAudioBooster();
+
+            window.safePlayAudio();
+            window.updatePlayerUI();
+        };
 
         window.fetchLinkInfo = async function(url) {
             const isTikTok = url.includes('tiktok.com');
@@ -2260,7 +2303,18 @@ mostPlayedTrackId = id;
         let unsubMain = null;
         let unsubStats = null;
 
-        const initFirebaseAndAuth = async () => {            try {                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {                    await signInWithCustomToken(auth, __initial_auth_token);                } else {                    await signInAnonymously(auth);                }            } catch (error) {                console.error("Auth init error:", error);                if (window.location.protocol === 'file:') {                    setTimeout(() => {                        window.openAlertModal(تنبيه هام للمطور ⚠️, المقاطع الخاصة بك لم تختفِ والكود يعمل بنجاح.<br><br>السبب في عدم ظهور المقاطع الآن هو أن قواعد حماية <b>(Firebase)</b> تمنع الاتصال بقاعدة البيانات لأنك تفتح الملف مباشرة من الكمبيوتر (عبر مسار file://).<br><br><b>لإظهار المقاطع واستكمال التطوير:</b><br>1- استخدم إضافة <b>Live Server</b> في برنامج VS Code.<br>2- أو قم برفع الملف على استضافتك وافتحه من الرابط الرسمي.);                    }, 1500);                }                await signInAnonymously(auth).catch(console.error);            }        };
+        const initFirebaseAndAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth init error:", error);
+                await signInAnonymously(auth).catch(console.error);
+            }
+        };
 
         initFirebaseAndAuth().then(() => {
             onAuthStateChanged(auth, (currentUser) => {
