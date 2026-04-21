@@ -24,6 +24,60 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.8), inset 0 2px 2px rgba(255,255,255,0.6);
         }
 
+        .vintage-btn:active {
+            transform: translateY(4px);
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.6), 0 0 0 #4a3018;
+        }
+
+        /* ستايل الزر الذهبي الجديد (الرف) */
+        .gold-btn-3d {
+            background: linear-gradient(to bottom, #fae596 0%, #dcb348 40%, #c29528 100%);
+            border: 1px solid #5a3d13;
+            border-radius: 8px;
+            box-shadow: 
+                inset 0 2px 1px rgba(255, 255, 255, 0.8),
+                0 4px 0 #613e10,
+                0 6px 10px rgba(0, 0, 0, 0.6);
+            color: #1a0f0a !important;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+            transition: all 0.1s;
+        }
+        .gold-btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 
+                inset 0 2px 1px rgba(255, 255, 255, 0.8),
+                0 0 0 #613e10, 
+                0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+        
+        /* ستايلات الهيدر الجديد (راديو خالد) */
+        .glossy-header {
+            background: linear-gradient(to bottom, #1c110a 0%, #0a0502 50%, #050201 100%);
+            border: 1px solid #2b1810;
+            border-radius: 16px;
+            box-shadow: inset 0 2px 1px rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+        .glossy-header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 50%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
+            pointer-events: none;
+        }
+        .gold-icon-bg {
+            background: repeating-linear-gradient(
+                0deg,
+                #d4af37,
+                #d4af37 3px,
+                #b8860b 3px,
+                #b8860b 6px
+            );
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7), 0 0 20px rgba(212,175,55,0.3);
+            border: 2px solid #5a3d13;
+        }
+
         /* ستايلات الراديو القديم */
         .wood-panel {
             background-color: #3e2723;
@@ -60,10 +114,10 @@
         .animate-pulse-ring { animation: pulse-ring 2s infinite ease-in-out; }
     </style>
 </head>
-<body class="min-h-screen text-amber-50 selection:bg-amber-900/50 flex flex-col p-4 sm:p-8">
+<body class="min-h-screen text-amber-50 selection:bg-amber-900/50 flex flex-col p-2 sm:p-4">
 
-    <!-- مشغل الصوت المخفي للروابط المباشرة -->
-    <audio id="html5-audio" class="hidden" crossorigin="anonymous"></audio>
+    <!-- مشغل الصوت/الفيديو المخفي للروابط المباشرة (تم تغييره لفيديو لدعم صيغة mp4 وغيرها) -->
+    <video id="html5-audio" class="hidden" playsinline crossorigin="anonymous"></video>
 
     <!-- نافذة لوحة التحكم المخفية -->
     <div id="admin-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center modal-overlay p-4 opacity-0 transition-opacity duration-300">
@@ -75,35 +129,54 @@
     <!-- حاوية الإشعارات -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <div class="max-w-5xl mx-auto w-full space-y-8 mt-4 sm:mt-0">
+    <div class="max-w-5xl mx-auto w-full mt-1 sm:mt-2">
 
-        <!-- الترويسة (الضغط هنا 5 مرات يفتح لوحة التحكم) -->
-        <header id="main-header" class="flex flex-col sm:flex-row items-center justify-between pb-6 border-b border-gray-800 gap-4 cursor-pointer select-none" title="انقر 5 مرات لفتح الإعدادات">
-            <div class="flex items-center gap-4 glass-hollow px-6 py-4 rounded-2xl w-full sm:w-auto hover:bg-[#1f140e] transition-colors">
-                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.4)] border-2 border-[#2c1810] pointer-events-none">
-                    <i data-lucide="radio" class="w-7 h-7 text-[#2c1810]"></i>
+        <!-- الترويسة المدمجة (الصندوق والزر في صف واحد لتقليل المسافات) -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3 mb-4">
+            
+            <!-- صندوق راديو خالد (على اليمين) مطابق للصورة -->
+            <div id="main-header" class="glossy-header pl-4 pr-6 py-2.5 flex items-center justify-between w-full md:w-auto cursor-pointer select-none transition-transform active:scale-95" title="انقر 5 مرات لفتح الإعدادات">
+                <div class="flex items-center gap-4 relative z-10">
+                    <!-- أيقونة الراديو -->
+                    <div class="w-14 h-14 rounded-full gold-icon-bg flex items-center justify-center shrink-0">
+                        <i data-lucide="radio" class="w-7 h-7 text-[#2c1810]"></i>
+                    </div>
+                    
+                    <!-- النصوص -->
+                    <div class="pointer-events-none text-right">
+                        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-[#ffe58f] via-[#d4af37] to-[#996515] drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style="font-family: Arial, sans-serif;">
+                            راديو خالد
+                        </h1>
+                        <p class="text-[13px] mt-0.5 text-transparent bg-clip-text bg-gradient-to-b from-blue-200 to-cyan-500 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] font-bold tracking-wide">
+                            رحلة الى الزمن الجميل
+                        </p>
+                    </div>
                 </div>
-                <div class="pointer-events-none">
-                    <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#996515] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                        راديو خالد
-                    </h1>
-                    <p class="text-sm text-amber-200/70 mt-1 leading-relaxed">
-                        باقة من الاذاعات البث المباشر <br> رحلة الى الزمن الجميل
-                    </p>
+
+                <!-- مؤشر بث مباشر وحالة قاعدة البيانات (على اليسار داخل الصندوق) -->
+                <div id="db-status" class="hidden sm:flex items-center gap-1.5 text-xs font-bold bg-red-950/60 border border-red-800 rounded-md px-3 py-1.5 mr-6 relative z-10 shadow-[inset_0_0_8px_rgba(239,68,68,0.2)]" dir="rtl">
+                    <span class="text-red-400 tracking-wider">بث مباشر</span>
+                    <i data-lucide="radio-tower" class="w-4 h-4 text-red-400 animate-pulse"></i>
+                    <!-- نقطة الاتصال بالسحابة -->
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 mr-2 shadow-[0_0_5px_#10b981]" title="متصل بالسحابة"></div>
                 </div>
             </div>
             
-            <!-- مؤشر حالة قاعدة البيانات -->
-            <div id="db-status" class="hidden sm:flex items-center gap-2 text-xs font-mono bg-[#111] border border-[#333] px-3 py-1.5 rounded-lg text-emerald-400">
-                <i data-lucide="database" class="w-4 h-4"></i> متصل بالسحابة
+            <!-- زر الرجوع للرئيسية على شكل رف (على اليسار) -->
+            <div class="bg-gradient-to-b from-[#4a2b18] to-[#241208] border border-[#110804] rounded-xl p-1.5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),_0_5px_10px_rgba(0,0,0,0.8)] flex items-center w-full md:w-auto justify-center">
+                <a href="https://khmohieldin.github.io/radio/" class="gold-btn-3d px-6 py-2 flex items-center justify-center gap-2 min-w-[180px] w-full md:w-auto">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span class="font-bold text-base">الرجوع للرئيسية</span>
+                </a>
             </div>
-        </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
             
             <!-- القسم الأيمن: المشغل -->
-            <div class="lg:col-span-5 space-y-6">
-                <div class="wood-panel rounded-3xl p-6 shadow-2xl relative flex flex-col items-center justify-center min-h-[450px]">
+            <div class="lg:col-span-5 space-y-4">
+                <div class="wood-panel rounded-3xl p-4 sm:p-5 shadow-2xl relative flex flex-col items-center justify-center min-h-[400px]">
                     
                     <div id="playing-glow" class="hidden">
                         <div class="absolute top-0 right-0 w-48 h-48 bg-amber-500/20 blur-[60px] rounded-full pointer-events-none"></div>
@@ -150,10 +223,10 @@
                         </div>
 
                         <!-- أزرار التشغيل الأساسية للتصميم -->
-                        <div class="flex items-center justify-center gap-6 w-full pt-2">
-                            <button id="btn-play-pause" class="w-16 h-16 rounded-full vintage-btn flex items-center justify-center transition-all opacity-50 pointer-events-none shadow-lg">
-                                <svg id="icon-play" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                <svg id="icon-pause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                        <div class="flex items-center justify-center gap-6 w-full pt-1">
+                            <button id="btn-play-pause" class="w-14 h-14 sm:w-16 sm:h-16 rounded-full vintage-btn flex items-center justify-center transition-all opacity-50 pointer-events-none shadow-lg">
+                                <svg id="icon-play" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                <svg id="icon-pause" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
                             </button>
                         </div>
 
@@ -163,15 +236,15 @@
 
             <!-- القسم الأيسر: قائمة الإذاعات -->
             <div class="lg:col-span-7">
-                <div class="wood-panel rounded-2xl overflow-hidden flex flex-col h-[650px] shadow-xl">
-                    <div class="p-5 glass-hollow flex items-center justify-between border-b-4 border-[#1a0f0a]">
+                <div class="wood-panel rounded-2xl overflow-hidden flex flex-col h-[550px] shadow-xl">
+                    <div class="p-4 sm:p-5 glass-hollow flex items-center justify-between border-b-4 border-[#1a0f0a]">
                         <h3 class="font-bold text-gray-100 flex items-center gap-3 text-xl">
                             <i data-lucide="list-music" class="w-6 h-6 text-amber-400"></i> القائمة الإذاعية
                         </h3>
-                        <span id="stations-count" class="bg-[#111] px-3 py-1 rounded-lg text-amber-500 font-mono text-sm border border-[#333]">13 إذاعة</span>
+                        <span id="stations-count" class="bg-[#111] px-3 py-1 rounded-lg text-amber-500 font-mono text-sm border border-[#333]">12 إذاعة</span>
                     </div>
 
-                    <div id="playlist-container" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3 relative z-10 bg-[#111]/80">
+                    <div id="playlist-container" class="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar space-y-2.5 relative z-10 bg-[#111]/80">
                         <div class="flex justify-center items-center h-full">
                             <i data-lucide="loader-2" class="w-8 h-8 text-amber-500 animate-spin"></i>
                         </div>
@@ -261,7 +334,7 @@
             }, 3000);
         };
 
-        // الإذاعات الافتراضية مع الإذاعات الجديدة
+        // الإذاعات الافتراضية (بدون MixPro)
         const defaultStations = [
             { id: 'x8n6dt3', title: 'إذاعة البرنامج العام', color: 'from-blue-900 to-blue-700', isCustom: false },
             { id: 'x8n6dqq', title: 'إذاعة صوت العرب', color: 'from-orange-900 to-orange-700', isCustom: false },
@@ -274,8 +347,7 @@
             { id: 'https://audio.nrpstream.com/listen/nogoumfm/radio.mp3', title: 'نجوم FM', color: 'from-yellow-900 to-yellow-700', isCustom: false },
             { id: 'https://megafm927.radioca.st/stream', title: 'ميجا FM', color: 'from-red-900 to-red-700', isCustom: false },
             { id: 'https://eu1.fastcast4u.com/proxy/prontofm?mp=/1', title: 'برونتو FM', color: 'from-blue-900 to-blue-700', isCustom: false },
-            { id: 'https://stream-176.zeno.fm/fhhhcrvxhchvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmaGhoY3J2eGhjaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjVnLXd1T00xUVNpQmUxS0FxRV9XNHciLCJpYXQiOjE3NzY4MDI1NjgsImV4cCI6MTc3NjgwMjYyOH0.a1MhZtOdclPFL67d6ojD9Q9-u8dyzvWTIa-kNACQahQ&rj-ttl=5&rj-tok=AAABfqMZ3SEAxhPnNjBT6OSbhA', title: 'إذاعة زينو', color: 'from-emerald-900 to-emerald-700', isCustom: false },
-            { id: 'https://mixpro.alwaysdata.net/yes.mp4', title: 'MixPro', color: 'from-purple-900 to-purple-700', isCustom: false }
+            { id: 'https://stream-176.zeno.fm/fhhhcrvxhchvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmaGhoY3J2eGhjaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjVnLXd1T00xUVNpQmUxS0FxRV9XNHciLCJpYXQiOjE3NzY4MDI1NjgsImV4cCI6MTc3NjgwMjYyOH0.a1MhZtOdclPFL67d6ojD9Q9-u8dyzvWTIa-kNACQahQ&rj-ttl=5&rj-tok=AAABfqMZ3SEAxhPnNjBT6OSbhA', title: 'إذاعة زينو', color: 'from-emerald-900 to-emerald-700', isCustom: false }
         ];
 
         // المتغيرات
@@ -353,11 +425,21 @@
                     stations = combined;
                     window.renderPlaylist();
                     
-                    document.getElementById('db-status').innerHTML = `<i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> متصل بالسحابة`;
+                    document.getElementById('db-status').innerHTML = `
+                        <span class="text-red-400 tracking-wider">بث مباشر</span>
+                        <i data-lucide="radio-tower" class="w-4 h-4 text-red-400 animate-pulse"></i>
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 mr-2 shadow-[0_0_5px_#10b981]" title="متصل بالسحابة"></div>
+                    `;
                     lucide.createIcons({ root: document.getElementById('db-status') });
                 }, (error) => {
                     console.error("خطأ في جلب بيانات الإذاعات:", error);
                     window.showToast("خطأ في الاتصال بقاعدة البيانات. راجع الصلاحيات.", "error");
+                    document.getElementById('db-status').innerHTML = `
+                        <span class="text-red-400 tracking-wider">بث مباشر</span>
+                        <i data-lucide="radio-tower" class="w-4 h-4 text-red-400 animate-pulse"></i>
+                        <div class="w-2 h-2 rounded-full bg-red-500 mr-2 shadow-[0_0_5px_#ef4444]" title="غير متصل"></div>
+                    `;
+                    lucide.createIcons({ root: document.getElementById('db-status') });
                 });
             } else {
                 stations = [...defaultStations];
@@ -442,14 +524,18 @@
                 html5Audio.src = station.id;
                 html5Audio.volume = volume / 100;
                 html5Audio.muted = isMuted;
-                html5Audio.play().catch(e => console.log('Autoplay prevented', e));
+                
+                const playPromise = html5Audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => { /* التجاهل لتجنب طباعة الأخطاء بالكونسول */ });
+                }
                 
                 isPlaying = !html5Audio.paused;
                 updatePlayerUI();
             } else {
                 // تشغيل فيديو ديليموشن عبر Iframe
                 html5Audio.pause();
-                html5Audio.src = '';
+                html5Audio.removeAttribute('src');
                 defaultIconContainer.classList.add('hidden');
                 dmIframe.classList.remove('hidden');
                 trackSubtitle.innerText = 'التحكم متاح داخل الشاشة';
@@ -540,8 +626,14 @@
             const isDirectLink = station.id.startsWith('http');
             
             if (isDirectLink) {
-                if (html5Audio.paused) html5Audio.play();
-                else html5Audio.pause();
+                if (html5Audio.paused) {
+                    const playPromise = html5Audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => { /* التجاهل لتجنب طباعة الأخطاء بالكونسول */ });
+                    }
+                } else {
+                    html5Audio.pause();
+                }
             } else {
                 sendDMCommand(isPlaying ? 'pause' : 'play');
             }
@@ -759,7 +851,8 @@
                     await setDoc(stationsDocRef, { stations: updatedCustomStations, overrides: stationOverrides }, { merge: true });
                     if (currentStationId === stationToDelete.id) {
                         dmIframe.src = '';
-                        html5Audio.src = '';
+                        html5Audio.pause();
+                        html5Audio.removeAttribute('src');
                         dmIframe.classList.add('hidden');
                         defaultIconContainer.classList.remove('hidden');
                         trackTitle.innerText = 'اختر إذاعة للبدء';
