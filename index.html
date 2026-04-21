@@ -99,8 +99,8 @@
                         <!-- شاشة المشغل المدمجة -->
                         <div id="screen-container" class="w-64 h-40 sm:w-72 sm:h-44 rounded-2xl border-4 border-gray-800 flex items-center justify-center bg-black transition-all duration-500 overflow-hidden shadow-xl relative group z-20">
                             
-                            <!-- إطار ديليموشن المباشر -->
-                            <iframe id="dm-iframe" class="w-full h-full absolute inset-0 z-10 hidden" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                            <!-- إطار ديليموشن المباشر (تم تحديث الخصائص لإزالة تحذيرات المتصفح) -->
+                            <iframe id="dm-iframe" class="w-full h-full absolute inset-0 z-10 hidden" frameborder="0" allow="autoplay; fullscreen"></iframe>
                             
                             <!-- أيقونة تظهر قبل تحديد الإذاعة -->
                             <div id="default-icon-container" class="absolute inset-0 z-0 flex items-center justify-center bg-[#111]">
@@ -165,26 +165,6 @@
         // تهيئة أيقونات Lucide
         lucide.createIcons();
 
-        // نظام الإشعارات الذكي
-        function showToast(message, type = 'info') {
-            const toastContainer = document.getElementById('toast-container');
-            if (!toastContainer) return;
-            const toast = document.createElement('div');
-            const bgColor = type === 'error' ? 'bg-red-600' : 'bg-cyan-600';
-            const icon = type === 'error' ? 'alert-triangle' : 'info';
-            
-            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white ${bgColor} transition-all duration-300 transform translate-y-0 opacity-100`;
-            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span class="font-medium text-sm leading-relaxed">${message}</span>`;
-            
-            toastContainer.appendChild(toast);
-            lucide.createIcons({ root: toast });
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-4');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        }
-
         // بيانات الإذاعات والروابط
         const stations = [
             { id: 'x8n6dt3', title: 'إذاعة البرنامج العام', color: 'from-blue-900 to-blue-700' },
@@ -218,23 +198,23 @@
         const btnMute = document.getElementById('btn-mute');
         const volumeIcon = document.getElementById('volume-icon');
 
-        // دالة إرسال الأوامر للمشغل 
+        // دالة موثوقة لإرسال الأوامر لديليموشن بجميع الصيغ التي يدعمها المشغل القديم والحديث
         function sendDMCommand(command, param) {
             if (!dmIframe.contentWindow) return;
-            let msg = 'command=' + command;
+            
+            // 1. الصيغة الكلاسيكية: إرسال كنص مباشر مدعوم بـ api=postMessage
+            let msg = command;
             if (param !== undefined) {
-                msg += '&parameters[]=' + param;
+                msg += '=' + param;
             }
             dmIframe.contentWindow.postMessage(msg, '*');
-        }
-
-        // دالة فحص بيئة التشغيل
-        function checkLocalEnvironment() {
-            if (window.location.protocol === 'file:') {
-                showToast('التحكم من الأزرار الخارجية مغلق مؤقتاً بواسطة حماية المتصفح لأنك تفتح الملف من الكمبيوتر. يرجى استخدام أزرار الشاشة، أو رفع الملف على استضافة.', 'error');
-                return true;
-            }
-            return false;
+            
+            // 2. الصيغة الحديثة للمشغلات الجديدة (Geo Player): إرسال كـ JSON
+            try {
+                const jsonObj = { command: command };
+                if (param !== undefined) jsonObj.parameters = [param];
+                dmIframe.contentWindow.postMessage(JSON.stringify(jsonObj), '*');
+            } catch(e) {}
         }
 
         // رسم القائمة
@@ -274,6 +254,7 @@
             currentStationIndex = index;
             const station = stations[index];
             
+            // تحديث واجهة المستخدم
             trackTitle.innerText = station.title;
             btnPlayPause.classList.remove('opacity-50', 'pointer-events-none');
             defaultIconContainer.classList.add('hidden');
@@ -282,9 +263,12 @@
             statusBadge.innerText = 'جاري الاتصال...';
             statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-yellow-900/40 text-yellow-400 border border-yellow-700/50';
 
-            // تحميل رابط ديليموشن. 
-            let originParam = window.location.origin !== 'file://' && window.location.origin !== 'null' ? `&origin=${encodeURIComponent(window.location.origin)}` : '&origin=http://localhost';
-            dmIframe.src = `https://www.dailymotion.com/embed/video/${station.id}?api=1${originParam}&autoplay=1&mute=0&controls=1`;
+            // دمج المشغل مباشرة.
+            // muteParam يُحدد إذا كان الصوت سيبدأ مكتوماً أم لا بناءً على اختيار المستخدم من الشريط.
+            const muteParam = isMuted ? '1' : '0';
+            
+            // قمنا بإضافة api=postMessage لتمكين استقبال الأوامر 
+            dmIframe.src = `https://www.dailymotion.com/embed/video/${station.id}?api=postMessage&autoplay=1&mute=${muteParam}&controls=1&ui-logo=0`;
 
             isPlaying = false;
             updatePlayerUI();
@@ -296,22 +280,31 @@
             if (!event.origin.includes('dailymotion.com')) return;
 
             let eventName = '';
+            
+            // معالجة الرسائل الواردة من مشغل ديليموشن بأي صيغة (Query String أو JSON)
             try {
                 if (typeof event.data === 'string') {
-                    const params = new URLSearchParams(event.data);
-                    eventName = params.get('event');
+                    if (event.data.includes('event=')) {
+                        const params = new URLSearchParams(event.data);
+                        eventName = params.get('event');
+                    } else if (event.data.startsWith('{')) {
+                        const parsed = JSON.parse(event.data);
+                        eventName = parsed.event || parsed.type;
+                    }
+                } else if (event.data && typeof event.data === 'object') {
+                    eventName = event.data.event || event.data.type;
                 }
             } catch(e) {}
 
             if (!eventName) return;
 
-            if (eventName === 'play' || eventName === 'playing') {
+            if (eventName === 'play' || eventName === 'playing' || eventName === 'video_start') {
                 isPlaying = true;
                 updatePlayerUI();
                 statusBadge.innerText = 'بث مباشر 🔴';
                 statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-red-900/40 text-red-400 border border-red-700/50';
             } 
-            else if (eventName === 'pause') {
+            else if (eventName === 'pause' || eventName === 'video_end') {
                 isPlaying = false;
                 updatePlayerUI();
                 statusBadge.innerText = 'متوقف';
@@ -340,8 +333,6 @@
 
         btnPlayPause.addEventListener('click', () => {
             if (currentStationIndex === -1) return;
-            if (checkLocalEnvironment()) return; // فحص البيئة المحلية
-            
             sendDMCommand(isPlaying ? 'pause' : 'play');
         });
 
@@ -350,8 +341,7 @@
             isMuted = volume === 0;
             updateVolumeIcon();
             
-            if (checkLocalEnvironment()) return; // فحص البيئة المحلية
-            
+            // إرسال قيم الصوت (من 0.0 إلى 1.0)
             sendDMCommand('volume', volume / 100);
             sendDMCommand('muted', isMuted ? 'true' : 'false');
         });
@@ -361,8 +351,6 @@
             if (!isMuted && volume === 0) volume = 50; 
             volumeSlider.value = isMuted ? 0 : volume;
             updateVolumeIcon();
-            
-            if (checkLocalEnvironment()) return; // فحص البيئة المحلية
             
             sendDMCommand('muted', isMuted ? 'true' : 'false');
             if (!isMuted) sendDMCommand('volume', volume / 100);
@@ -389,7 +377,7 @@
             const numBars = canvas.width / (barWidth + barSpacing);
             
             for (let i = 0; i < numBars; i++) {
-                let barHeight = 2;
+                let barHeight = 2; // الارتفاع الافتراضي
                 
                 if (isPlaying) {
                     barHeight = Math.random() * (canvas.height - 10) + 10;
