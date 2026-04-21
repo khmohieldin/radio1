@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>راديو الإذاعات المصرية</title>
+    <title>راديو خالد</title>
     
     <!-- تضمين مكتبة Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -50,9 +50,20 @@
         .modal-overlay {
             backdrop-filter: blur(5px);
         }
+        
+        /* حركة أيقونة البث المباشر */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+        .animate-pulse-ring { animation: pulse-ring 2s infinite ease-in-out; }
     </style>
 </head>
 <body class="min-h-screen text-amber-50 selection:bg-amber-900/50 flex flex-col p-4 sm:p-8">
+
+    <!-- مشغل الصوت المخفي للروابط المباشرة -->
+    <audio id="html5-audio" class="hidden" crossorigin="anonymous"></audio>
 
     <!-- نافذة لوحة التحكم المخفية -->
     <div id="admin-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center modal-overlay p-4 opacity-0 transition-opacity duration-300">
@@ -74,9 +85,11 @@
                 </div>
                 <div class="pointer-events-none">
                     <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#996515] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                        باقة الإذاعات المصرية
+                        راديو خالد
                     </h1>
-                    <p class="text-sm text-amber-200/70 mt-1">رحلة عبر الأثير مع إذاعات الزمن الجميل</p>
+                    <p class="text-sm text-amber-200/70 mt-1 leading-relaxed">
+                        باقة من الاذاعات البث المباشر <br> رحلة الى الزمن الجميل
+                    </p>
                 </div>
             </div>
             
@@ -108,9 +121,9 @@
                             <!-- إطار ديليموشن المباشر (Iframe) -->
                             <iframe id="dm-iframe" class="w-full h-full absolute inset-0 z-10 hidden" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation" allowfullscreen></iframe>
                             
-                            <!-- أيقونة تظهر قبل تحديد الإذاعة -->
-                            <div id="default-icon-container" class="absolute inset-0 z-0 flex items-center justify-center bg-[#111]">
-                                <i data-lucide="tv" class="w-12 h-12 text-gray-700"></i>
+                            <!-- أيقونة تظهر للبث الصوتي المباشر أو قبل تحديد الإذاعة -->
+                            <div id="default-icon-container" class="absolute inset-0 z-0 flex items-center justify-center bg-gradient-to-br from-[#1a1a1a] to-black">
+                                <img id="audio-logo" src="https://i.ibb.co/gLY64BkX/Untitled-5.png" alt="شعار الإذاعة" class="w-full h-full object-contain p-2 transition-all duration-500 grayscale opacity-50">
                             </div>
                         </div>
 
@@ -122,8 +135,26 @@
                             </h2>
                             <div class="flex items-center justify-center gap-2 text-sm text-amber-200/50">
                                 <i data-lucide="radio-receiver" class="w-4 h-4"></i>
-                                <span>التحكم متاح داخل الشاشة</span>
+                                <span id="track-subtitle">التحكم متاح من الأزرار أو داخل الشاشة</span>
                             </div>
+                        </div>
+
+                        <!-- التحكم بمستوى الصوت الخارجي -->
+                        <div class="w-full px-4" dir="ltr">
+                            <div class="flex items-center gap-3 glass-hollow p-3 rounded-xl">
+                                <button id="btn-mute" class="text-amber-500 hover:text-amber-300">
+                                    <i id="volume-icon" data-lucide="volume-2" class="w-5 h-5"></i>
+                                </button>
+                                <input type="range" id="volume-slider" min="0" max="100" value="100" class="flex-1 h-1.5 bg-[#1a0f0a] border border-[#3e2723] rounded-lg appearance-none cursor-pointer custom-range" />
+                            </div>
+                        </div>
+
+                        <!-- أزرار التشغيل الأساسية للتصميم -->
+                        <div class="flex items-center justify-center gap-6 w-full pt-2">
+                            <button id="btn-play-pause" class="w-16 h-16 rounded-full vintage-btn flex items-center justify-center transition-all opacity-50 pointer-events-none shadow-lg">
+                                <svg id="icon-play" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                <svg id="icon-pause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                            </button>
                         </div>
 
                     </div>
@@ -137,7 +168,7 @@
                         <h3 class="font-bold text-gray-100 flex items-center gap-3 text-xl">
                             <i data-lucide="list-music" class="w-6 h-6 text-amber-400"></i> القائمة الإذاعية
                         </h3>
-                        <span id="stations-count" class="bg-[#111] px-3 py-1 rounded-lg text-amber-500 font-mono text-sm border border-[#333]">8 إذاعات</span>
+                        <span id="stations-count" class="bg-[#111] px-3 py-1 rounded-lg text-amber-500 font-mono text-sm border border-[#333]">13 إذاعة</span>
                     </div>
 
                     <div id="playlist-container" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3 relative z-10 bg-[#111]/80">
@@ -149,16 +180,31 @@
             </div>
 
         </div>
+
+        <!-- تذييل بيانات المطور -->
+        <footer class="mt-6 glass-hollow p-6 rounded-2xl text-center border border-[#3e2723]">
+            <p class="text-[#d4af37] font-bold text-lg mb-4">تطوير خالد محي الدين</p>
+            <div class="flex flex-wrap items-center justify-center gap-6">
+                <a href="https://wa.me/201018282460" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-gray-300 hover:text-[#25D366] transition-colors bg-[#111] px-4 py-2 rounded-lg border border-[#333] hover:border-[#25D366]">
+                    <i data-lucide="phone" class="w-5 h-5"></i>
+                    <span dir="ltr" class="font-mono text-sm">00201018282460</span>
+                    <span class="text-sm">واتساب</span>
+                </a>
+                <a href="https://www.facebook.com/khaledmohyalden" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-gray-300 hover:text-[#1877F2] transition-colors bg-[#111] px-4 py-2 rounded-lg border border-[#333] hover:border-[#1877F2]">
+                    <i data-lucide="facebook" class="w-5 h-5"></i>
+                    <span class="text-sm">فيسبوك</span>
+                </a>
+            </div>
+        </footer>
+
     </div>
 
     <!-- استخدام النوع module لتشغيل استيرادات Firebase -->
     <script type="module">
-        // استيراد Firebase من السيرفرات الرسمية لجوجل
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // تهيئة أيقونات Lucide
         lucide.createIcons();
 
         // إعدادات Firebase الخاصة بك
@@ -172,19 +218,12 @@
             measurementId: "G-7FPCRV0L55"
         };
 
-        // تهيئة التطبيق وقاعدة البيانات والمصادقة
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
-        // تعريف معرف التطبيق
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'egypt_radio_app';
-        
-        // مسار الحفظ متوافق مع قواعدك تماماً ولن يؤثر على الموقع الآخر
-        // المسار هو: /artifacts/{appId}/public/data/videos/radio_custom_stations
+        const appId = 'egypt_radio_app';
         const stationsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'videos', 'radio_custom_stations');
 
-        // تسجيل الدخول الصامت مع تخطي خطأ التعارض في التوكن (custom-token-mismatch)
         let user = null;
         const initAuth = async () => {
             try {
@@ -192,7 +231,6 @@
                     try {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } catch (tokenError) {
-                        console.warn("الرقم السري الخاص بالبيئة غير متطابق مع قاعدة بياناتك، جاري الدخول كمجهول...");
                         await signInAnonymously(auth);
                     }
                 } else {
@@ -204,7 +242,6 @@
         };
         initAuth();
 
-        // نظام الإشعارات الذكي
         window.showToast = function(message, type = 'info') {
             const toastContainer = document.getElementById('toast-container');
             if (!toastContainer) return;
@@ -224,7 +261,7 @@
             }, 3000);
         };
 
-        // الإذاعات الافتراضية الثابتة
+        // الإذاعات الافتراضية مع الإذاعات الجديدة
         const defaultStations = [
             { id: 'x8n6dt3', title: 'إذاعة البرنامج العام', color: 'from-blue-900 to-blue-700', isCustom: false },
             { id: 'x8n6dqq', title: 'إذاعة صوت العرب', color: 'from-orange-900 to-orange-700', isCustom: false },
@@ -234,45 +271,86 @@
             { id: 'x8n6eci', title: 'إذاعة البرنامج الثقافي', color: 'from-teal-900 to-teal-700', isCustom: false },
             { id: 'x8n6ebs', title: 'إذاعة القاهرة الكبرى', color: 'from-indigo-900 to-indigo-700', isCustom: false },
             { id: 'x9p4ebk', title: 'إذاعة الوادي الجديد', color: 'from-amber-900 to-amber-700', isCustom: false },
+            { id: 'https://audio.nrpstream.com/listen/nogoumfm/radio.mp3', title: 'نجوم FM', color: 'from-yellow-900 to-yellow-700', isCustom: false },
+            { id: 'https://megafm927.radioca.st/stream', title: 'ميجا FM', color: 'from-red-900 to-red-700', isCustom: false },
+            { id: 'https://eu1.fastcast4u.com/proxy/prontofm?mp=/1', title: 'برونتو FM', color: 'from-blue-900 to-blue-700', isCustom: false },
+            { id: 'https://stream-176.zeno.fm/fhhhcrvxhchvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJmaGhoY3J2eGhjaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjVnLXd1T00xUVNpQmUxS0FxRV9XNHciLCJpYXQiOjE3NzY4MDI1NjgsImV4cCI6MTc3NjgwMjYyOH0.a1MhZtOdclPFL67d6ojD9Q9-u8dyzvWTIa-kNACQahQ&rj-ttl=5&rj-tok=AAABfqMZ3SEAxhPnNjBT6OSbhA', title: 'إذاعة زينو', color: 'from-emerald-900 to-emerald-700', isCustom: false },
+            { id: 'https://mixpro.alwaysdata.net/yes.mp4', title: 'MixPro', color: 'from-purple-900 to-purple-700', isCustom: false }
         ];
 
         // المتغيرات
         let customStations = [];
+        let stationOverrides = {}; // لحفظ تعديلات الأسماء
         let stations = [...defaultStations];
-        let currentStationIndex = -1;
+        let currentStationId = null; 
         let isPlaying = false;
         let isAdmin = false; 
+        let volume = 100;
+        let isMuted = false;
+        let draggedIndex = -1; // متغير السحب والإفلات
         
         // عناصر واجهة المستخدم
+        const html5Audio = document.getElementById('html5-audio');
         const dmIframe = document.getElementById('dm-iframe');
         const trackTitle = document.getElementById('track-title');
         const screenContainer = document.getElementById('screen-container');
         const defaultIconContainer = document.getElementById('default-icon-container');
+        const audioLogo = document.getElementById('audio-logo');
         const statusBadge = document.getElementById('status-badge');
+        const trackSubtitle = document.getElementById('track-subtitle');
         const playingGlow = document.getElementById('playing-glow');
         const playlistContainer = document.getElementById('playlist-container');
         const adminModal = document.getElementById('admin-modal');
         const adminModalContent = document.getElementById('admin-modal-content');
+        const btnPlayPause = document.getElementById('btn-play-pause');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        const volumeSlider = document.getElementById('volume-slider');
+        const btnMute = document.getElementById('btn-mute');
+        const volumeIcon = document.getElementById('volume-icon');
 
         // تحديث عدد الإذاعات
         function updateStationsCount() {
-            const stationsCount = document.getElementById('stations-count');
-            if (stationsCount) {
-                stationsCount.innerText = `${stations.length} إذاعة`;
+            const countEl = document.getElementById('stations-count');
+            if (countEl) {
+                countEl.innerText = `${stations.length} إذاعة`;
             }
         }
 
-        // الاستماع لقاعدة البيانات بشكل فوري (فقط بعد التأكد من تسجيل الدخول)
+        // الاستماع لقاعدة البيانات وتطبيق التعديلات والترتيب
         onAuthStateChanged(auth, (currentUser) => {
             user = currentUser;
             if (user) {
                 onSnapshot(stationsDocRef, (docSnap) => {
+                    let order = [];
                     if (docSnap.exists()) {
                         customStations = docSnap.data().stations || [];
+                        stationOverrides = docSnap.data().overrides || {};
+                        order = docSnap.data().order || []; // جلب الترتيب المحفوظ
                     } else {
                         customStations = [];
+                        stationOverrides = {};
                     }
-                    stations = [...defaultStations, ...customStations];
+                    
+                    // تطبيق الأسماء المعدلة على الإذاعات الافتراضية
+                    const mergedDefaults = defaultStations.map(s => {
+                        return { ...s, title: stationOverrides[s.id] || s.title };
+                    });
+
+                    let combined = [...mergedDefaults, ...customStations];
+
+                    // ترتيب الإذاعات بناءً على الترتيب المحفوظ في السحابة
+                    if (order.length > 0) {
+                        combined.sort((a, b) => {
+                            let indexA = order.indexOf(a.id);
+                            let indexB = order.indexOf(b.id);
+                            if (indexA === -1) indexA = 9999; // الإذاعات الجديدة توضع في النهاية
+                            if (indexB === -1) indexB = 9999;
+                            return indexA - indexB;
+                        });
+                    }
+
+                    stations = combined;
                     window.renderPlaylist();
                     
                     document.getElementById('db-status').innerHTML = `<i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> متصل بالسحابة`;
@@ -280,11 +358,8 @@
                 }, (error) => {
                     console.error("خطأ في جلب بيانات الإذاعات:", error);
                     window.showToast("خطأ في الاتصال بقاعدة البيانات. راجع الصلاحيات.", "error");
-                    document.getElementById('db-status').innerHTML = `<i data-lucide="database" class="w-4 h-4 text-red-500"></i> غير متصل`;
-                    lucide.createIcons({ root: document.getElementById('db-status') });
                 });
             } else {
-                // في حال لم يتمكن من تسجيل الدخول يتم عرض المحطات الافتراضية فقط
                 stations = [...defaultStations];
                 window.renderPlaylist();
             }
@@ -294,7 +369,7 @@
         window.renderPlaylist = function() {
             updateStationsCount();
             playlistContainer.innerHTML = stations.map((station, index) => {
-                const isActive = index === currentStationIndex;
+                const isActive = station.id === currentStationId; 
                 const activeClass = isActive ? 'border-amber-500 bg-[#2b1810]' : 'border-[#333] bg-[#1a1a1a] hover:bg-[#222]';
                 const textClass = isActive ? 'text-amber-400' : 'text-gray-200';
                 const iconOrEq = isActive && isPlaying 
@@ -305,21 +380,29 @@
                        </div>`
                     : `<i data-lucide="${isActive ? 'pause-circle' : 'play-circle'}" class="w-6 h-6 ${isActive ? 'text-amber-400' : 'text-gray-500'}"></i>`;
 
-                // زر الحذف
-                const deleteBtn = (isAdmin && station.isCustom) 
-                    ? `<button onclick="window.deleteCustomStation(event, ${index})" class="p-2 bg-red-900/50 hover:bg-red-600 text-red-300 hover:text-white rounded-lg transition-colors ml-2" title="حذف الإذاعة"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
-                    : '';
+                // أزرار التعديل والحذف للإدمن
+                let adminButtons = '';
+                if (isAdmin) {
+                    const editBtn = `<button onclick="window.editStationName(event, ${index})" class="p-2 bg-blue-900/50 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-colors ml-1" title="تعديل الاسم"><i data-lucide="edit" class="w-4 h-4"></i></button>`;
+                    const deleteBtn = station.isCustom ? `<button onclick="window.deleteCustomStation(event, ${index})" class="p-2 bg-red-900/50 hover:bg-red-600 text-red-300 hover:text-white rounded-lg transition-colors" title="حذف الإذاعة"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+                    adminButtons = `<div class="flex">${editBtn}${deleteBtn}</div>`;
+                }
+
+                // خصائص السحب والإفلات (Drag & Drop) تظهر للإدمن فقط
+                const dragAttrs = isAdmin ? `draggable="true" ondragstart="window.handleDragStart(event, ${index})" ondragover="window.handleDragOver(event)" ondrop="window.handleDrop(event, ${index})" ondragenter="window.handleDragEnter(event)" ondragleave="window.handleDragLeave(event)"` : '';
+                const dragHandle = isAdmin ? `<div class="cursor-grab text-gray-500 hover:text-white mr-1 ml-3 flex-shrink-0" title="اسحب للترتيب"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>` : '';
 
                 return `
-                    <div onclick="window.selectStation(${index})" class="flex items-center gap-4 p-4 rounded-xl border ${activeClass} cursor-pointer transition-all shadow-md group">
+                    <div ${dragAttrs} onclick="window.selectStation(${index})" class="flex items-center gap-3 p-4 rounded-xl border ${activeClass} cursor-pointer transition-all shadow-md group">
+                        ${dragHandle}
                         <div class="w-12 h-12 rounded-lg bg-gradient-to-br ${station.color} flex items-center justify-center shadow-inner shrink-0 group-hover:scale-105 transition-transform border border-black/50">
                             <i data-lucide="radio" class="w-6 h-6 text-white/80"></i>
                         </div>
                         <div class="flex-1 min-w-0 text-right">
                             <h4 class="text-lg font-bold ${textClass} truncate">${station.title}</h4>
-                            <p class="text-xs text-gray-400 truncate mt-1">${station.isCustom ? 'إذاعة مضافة' : 'بث مباشر - الهيئة الوطنية للإعلام'}</p>
+                            <p class="text-xs text-gray-400 truncate mt-1">${station.isCustom ? 'إذاعة مضافة' : 'بث مباشر'}</p>
                         </div>
-                        ${deleteBtn}
+                        ${adminButtons}
                         <div class="shrink-0 flex items-center justify-center w-10">
                             ${iconOrEq}
                         </div>
@@ -329,32 +412,76 @@
             lucide.createIcons({ root: playlistContainer });
         }
 
-        // تهيئة واختيار المحطة
+        // إرسال أوامر لديليموشن
+        function sendDMCommand(command, param) {
+            if (!dmIframe.contentWindow) return;
+            let msg = 'command=' + command;
+            if (param !== undefined) msg += '&parameters[]=' + param;
+            dmIframe.contentWindow.postMessage(msg, '*');
+        }
+
+        // تهيئة واختيار المحطة (ذكية: تختار بين ديليموشن والرابط المباشر)
         window.selectStation = function(index) {
-            currentStationIndex = index;
             const station = stations[index];
+            currentStationId = station.id; 
+            const isDirectLink = station.id.startsWith('http');
             
-            // تحديث واجهة المستخدم
             trackTitle.innerText = station.title;
-            defaultIconContainer.classList.add('hidden');
-            dmIframe.classList.remove('hidden');
+            btnPlayPause.classList.remove('opacity-50', 'pointer-events-none');
             
             statusBadge.innerText = 'جاري الاتصال...';
             statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-yellow-900/40 text-yellow-400 border border-yellow-700/50';
 
-            let originParam = window.location.origin !== 'file://' && window.location.origin !== 'null' ? `&origin=${encodeURIComponent(window.location.origin)}` : '&origin=http://localhost';
-            
-            dmIframe.src = `https://www.dailymotion.com/embed/video/${station.id}?api=1${originParam}&autoplay=1&mute=0&controls=1&ui-logo=0&sharing-enable=0&ui-start-screen-info=0`;
+            if (isDirectLink) {
+                // تشغيل رابط صوتي مباشر عبر HTML5 Audio
+                dmIframe.classList.add('hidden');
+                dmIframe.src = '';
+                defaultIconContainer.classList.remove('hidden');
+                trackSubtitle.innerText = 'بث صوتي مباشر عبر الأثير';
+                
+                html5Audio.src = station.id;
+                html5Audio.volume = volume / 100;
+                html5Audio.muted = isMuted;
+                html5Audio.play().catch(e => console.log('Autoplay prevented', e));
+                
+                isPlaying = !html5Audio.paused;
+                updatePlayerUI();
+            } else {
+                // تشغيل فيديو ديليموشن عبر Iframe
+                html5Audio.pause();
+                html5Audio.src = '';
+                defaultIconContainer.classList.add('hidden');
+                dmIframe.classList.remove('hidden');
+                trackSubtitle.innerText = 'التحكم متاح داخل الشاشة';
 
-            isPlaying = false;
-            updatePlayerUI();
+                let originParam = window.location.origin !== 'file://' && window.location.origin !== 'null' ? `&origin=${encodeURIComponent(window.location.origin)}` : '&origin=http://localhost';
+                dmIframe.src = `https://www.dailymotion.com/embed/video/${station.id}?api=1${originParam}&autoplay=1&mute=0&controls=1&ui-logo=0&sharing-enable=0&ui-start-screen-info=0`;
+
+                isPlaying = false;
+                updatePlayerUI();
+            }
             window.renderPlaylist();
         }
 
-        // الاستماع لأحداث المشغل
+        // أحداث المشغل المباشر (HTML5 Audio)
+        html5Audio.addEventListener('play', () => { 
+            isPlaying = true; updatePlayerUI(); 
+            statusBadge.innerText = 'بث مباشر 🔴';
+            statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-red-900/40 text-red-400 border border-red-700/50';
+        });
+        html5Audio.addEventListener('pause', () => { 
+            isPlaying = false; updatePlayerUI(); 
+            statusBadge.innerText = 'متوقف';
+            statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-gray-900/40 text-gray-400 border border-gray-700/50';
+        });
+        html5Audio.addEventListener('waiting', () => {
+            statusBadge.innerText = 'جاري التحميل...';
+            statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-yellow-900/40 text-yellow-400 border border-yellow-700/50';
+        });
+
+        // أحداث ديليموشن
         window.addEventListener('message', (event) => {
             if (!event.origin.includes('dailymotion.com')) return;
-
             let eventName = '';
             try {
                 if (typeof event.data === 'string') {
@@ -381,21 +508,87 @@
 
         function updatePlayerUI() {
             if (isPlaying) {
+                iconPlay.classList.add('hidden');
+                iconPause.classList.remove('hidden');
                 screenContainer.classList.add('border-amber-500', 'shadow-[0_0_30px_rgba(245,158,11,0.5)]');
                 screenContainer.classList.remove('border-gray-800');
                 playingGlow.classList.remove('hidden');
+                if (audioLogo) {
+                    audioLogo.classList.add('animate-pulse-ring', 'drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]');
+                    audioLogo.classList.remove('grayscale', 'opacity-50');
+                }
             } else {
+                iconPlay.classList.remove('hidden');
+                iconPause.classList.add('hidden');
                 screenContainer.classList.remove('border-amber-500', 'shadow-[0_0_30px_rgba(245,158,11,0.5)]');
                 screenContainer.classList.add('border-gray-800');
                 playingGlow.classList.add('hidden');
+                if (audioLogo) {
+                    audioLogo.classList.remove('animate-pulse-ring', 'drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]');
+                    audioLogo.classList.add('grayscale', 'opacity-50');
+                }
             }
             window.renderPlaylist();
         }
 
+        // أزرار التحكم الخارجي
+        btnPlayPause.addEventListener('click', () => {
+            if (!currentStationId) return;
+            const station = stations.find(s => s.id === currentStationId);
+            if (!station) return;
+            
+            const isDirectLink = station.id.startsWith('http');
+            
+            if (isDirectLink) {
+                if (html5Audio.paused) html5Audio.play();
+                else html5Audio.pause();
+            } else {
+                sendDMCommand(isPlaying ? 'pause' : 'play');
+            }
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            volume = parseInt(e.target.value);
+            isMuted = volume === 0;
+            updateVolumeIcon();
+            
+            const station = stations.find(s => s.id === currentStationId);
+            if (station && station.id.startsWith('http')) {
+                html5Audio.volume = volume / 100;
+                html5Audio.muted = isMuted;
+            } else {
+                sendDMCommand('volume', volume / 100);
+                sendDMCommand('muted', isMuted ? 'true' : 'false');
+            }
+        });
+
+        btnMute.addEventListener('click', () => {
+            isMuted = !isMuted;
+            if (!isMuted && volume === 0) volume = 50; 
+            volumeSlider.value = isMuted ? 0 : volume;
+            updateVolumeIcon();
+            
+            const station = stations.find(s => s.id === currentStationId);
+            if (station && station.id.startsWith('http')) {
+                html5Audio.muted = isMuted;
+                if (!isMuted) html5Audio.volume = volume / 100;
+            } else {
+                sendDMCommand('muted', isMuted ? 'true' : 'false');
+                if (!isMuted) sendDMCommand('volume', volume / 100);
+            }
+        });
+
+        function updateVolumeIcon() {
+            let icon = 'volume-2';
+            if (isMuted || volume == 0) icon = 'volume-x';
+            else if (volume < 50) icon = 'volume-1';
+            volumeIcon.setAttribute('data-lucide', icon);
+            lucide.createIcons({ root: btnMute });
+        }
+
         // ==========================================
-        // نظام لوحة التحكم والفايربيس
+        // نظام لوحة التحكم
         // ==========================================
-        
         let headerClickCount = 0;
         let headerClickTimer;
         
@@ -403,7 +596,6 @@
         header.addEventListener('click', () => {
             headerClickCount++;
             clearTimeout(headerClickTimer);
-            
             if (headerClickCount >= 5) {
                 headerClickCount = 0;
                 window.openAdminModal();
@@ -419,12 +611,7 @@
                 adminModal.classList.remove('opacity-0');
                 adminModalContent.classList.remove('scale-95');
             }, 10);
-
-            if (!isAdmin) {
-                renderLoginUI();
-            } else {
-                renderDashboardUI();
-            }
+            if (!isAdmin) renderLoginUI(); else renderDashboardUI();
         }
 
         window.closeAdminModal = function() {
@@ -454,7 +641,6 @@
             `;
             lucide.createIcons({ root: adminModalContent });
             document.getElementById('admin-password').focus();
-            
             document.getElementById('admin-password').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') window.checkPassword();
             });
@@ -486,11 +672,11 @@
                         <input type="text" id="new-station-name" class="w-full bg-[#0a0502] border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] outline-none" placeholder="مثال: إذاعة القرآن الكريم">
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">رابط ديليموشن (أو المعرف ID):</label>
-                        <input type="text" id="new-station-url" class="w-full bg-[#0a0502] border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] outline-none text-left" dir="ltr" placeholder="https://dailymotion.com/video/x8n6dt3">
+                        <label class="block text-sm text-gray-400 mb-1">الرابط المباشر أو المعرف:</label>
+                        <input type="text" id="new-station-url" class="w-full bg-[#0a0502] border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] outline-none text-left" dir="ltr" placeholder="https://...">
                     </div>
                     <button onclick="window.addNewStation()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex justify-center items-center gap-2">
-                        <i data-lucide="plus-circle" class="w-5 h-5"></i> حفظ الإذاعة في السحابة
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i> إضافة الإذاعة وحفظها
                     </button>
                 </div>
             `;
@@ -502,115 +688,174 @@
             if (match) return match[1];
             match = url.match(/video=([a-zA-Z0-9]+)/);
             if (match) return match[1];
+            if (url.startsWith('http')) return url.trim(); // رابط مباشر
             return url.trim(); 
         }
 
         window.addNewStation = async function() {
-            if (!user) {
-                window.showToast('جاري الاتصال بالسحابة للمصادقة، يرجى الانتظار...', 'info');
-                return;
-            }
-
+            if (!user) { window.showToast('جاري الاتصال بالسحابة...', 'info'); return; }
             const nameInput = document.getElementById('new-station-name').value.trim();
             const urlInput = document.getElementById('new-station-url').value.trim();
 
-            if (!nameInput || !urlInput) {
-                window.showToast('يرجى تعبئة جميع الحقول', 'error');
-                return;
-            }
+            if (!nameInput || !urlInput) { window.showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
 
             const videoId = extractDMId(urlInput);
-            
-            const colors = [
-                'from-red-900 to-red-700', 'from-blue-900 to-blue-700', 
-                'from-emerald-900 to-emerald-700', 'from-fuchsia-900 to-fuchsia-700',
-                'from-rose-900 to-rose-700', 'from-cyan-900 to-cyan-700'
-            ];
+            const colors = ['from-red-900 to-red-700', 'from-blue-900 to-blue-700', 'from-emerald-900 to-emerald-700', 'from-fuchsia-900 to-fuchsia-700', 'from-rose-900 to-rose-700', 'from-cyan-900 to-cyan-700'];
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
-            const newStation = {
-                id: videoId,
-                title: nameInput,
-                color: randomColor,
-                isCustom: true
-            };
-
+            const newStation = { id: videoId, title: nameInput, color: randomColor, isCustom: true };
             const updatedCustomStations = [...customStations, newStation];
             
             try {
-                // الحفظ في قاعدة البيانات السحابية (فايربيس)
-                await setDoc(stationsDocRef, { stations: updatedCustomStations }, { merge: true });
-                window.showToast('تمت إضافة الإذاعة وحفظها بنجاح!', 'success');
-                
+                await setDoc(stationsDocRef, { stations: updatedCustomStations, overrides: stationOverrides }, { merge: true });
+                window.showToast('تمت الإضافة بنجاح!', 'success');
                 document.getElementById('new-station-name').value = '';
                 document.getElementById('new-station-url').value = '';
             } catch (e) {
-                console.error("Error saving to Firebase:", e);
-                window.showToast('حدث خطأ أثناء الحفظ. تأكد من إعدادات قاعدة البيانات.', 'error');
+                window.showToast('حدث خطأ أثناء الحفظ.', 'error');
+            }
+        }
+
+        // تعديل اسم الإذاعة
+        window.editStationName = async function(event, index) {
+            event.stopPropagation();
+            if (!user) return;
+            
+            const station = stations[index];
+            const newName = prompt(`تعديل اسم إذاعة "${station.title}":`, station.title);
+            
+            if (!newName || newName.trim() === '' || newName === station.title) return;
+
+            if (station.isCustom) {
+                const customIndex = customStations.findIndex(s => s.id === station.id);
+                if (customIndex !== -1) {
+                    customStations[customIndex].title = newName.trim();
+                }
+            } else {
+                stationOverrides[station.id] = newName.trim();
+            }
+
+            try {
+                await setDoc(stationsDocRef, { stations: customStations, overrides: stationOverrides }, { merge: true });
+                window.showToast('تم تعديل الاسم بنجاح!', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء حفظ التعديل.', 'error');
             }
         }
 
         window.deleteCustomStation = async function(event, index) {
             event.stopPropagation();
             if (!user) return;
-            if(!confirm('هل أنت متأكد من حذف هذه الإذاعة من السحابة لجميع المستخدمين؟')) return;
+            if(!confirm('هل أنت متأكد من حذف هذه الإذاعة نهائياً؟')) return;
 
-            const customIndex = index - defaultStations.length;
+            const stationToDelete = stations[index];
+            const customIndex = customStations.findIndex(s => s.id === stationToDelete.id);
             
             if (customIndex >= 0) {
                 const updatedCustomStations = [...customStations];
                 updatedCustomStations.splice(customIndex, 1);
                 
                 try {
-                    // الحذف من قاعدة البيانات السحابية
-                    await setDoc(stationsDocRef, { stations: updatedCustomStations }, { merge: true });
-                    
-                    if (currentStationIndex === index) {
+                    await setDoc(stationsDocRef, { stations: updatedCustomStations, overrides: stationOverrides }, { merge: true });
+                    if (currentStationId === stationToDelete.id) {
                         dmIframe.src = '';
+                        html5Audio.src = '';
                         dmIframe.classList.add('hidden');
                         defaultIconContainer.classList.remove('hidden');
                         trackTitle.innerText = 'اختر إذاعة للبدء';
                         statusBadge.innerText = 'متوقف';
-                        statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-gray-900/40 text-gray-400 border border-gray-700/50';
-                        currentStationIndex = -1;
+                        currentStationId = null;
                         isPlaying = false;
                         updatePlayerUI();
                     }
-                    
                     window.showToast('تم الحذف بنجاح', 'info');
                 } catch(e) {
-                    console.error("Error deleting from Firebase:", e);
                     window.showToast('حدث خطأ أثناء الحذف.', 'error');
                 }
             }
         }
 
-        // محاكي الذبذبات الوهمي (Visualizer)
+        // ==========================================
+        // نظام السحب والإفلات (Drag & Drop)
+        // ==========================================
+        
+        window.handleDragStart = function(e, index) {
+            if (!isAdmin) return;
+            draggedIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(() => { e.target.classList.add('opacity-50', 'scale-95'); }, 0);
+        }
+
+        window.handleDragOver = function(e) {
+            if (!isAdmin) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        window.handleDragEnter = function(e) {
+            if (!isAdmin) return;
+            e.preventDefault();
+            const item = e.currentTarget;
+            if (item.classList) item.classList.add('border-dashed', 'border-amber-400');
+        }
+
+        window.handleDragLeave = function(e) {
+            if (!isAdmin) return;
+            const item = e.currentTarget;
+            if (item.classList) item.classList.remove('border-dashed', 'border-amber-400');
+        }
+
+        window.handleDrop = async function(e, targetIndex) {
+            if (!isAdmin) return;
+            e.preventDefault();
+            e.currentTarget.classList.remove('border-dashed', 'border-amber-400');
+            
+            if (draggedIndex === -1 || draggedIndex === targetIndex) return;
+
+            // إعادة الترتيب محلياً لتحديث الواجهة فوراً بصرياً
+            const movedStation = stations.splice(draggedIndex, 1)[0];
+            stations.splice(targetIndex, 0, movedStation);
+            window.renderPlaylist();
+
+            // حفظ الترتيب الجديد في قاعدة البيانات عبر قائمة الـ IDs
+            const newOrder = stations.map(s => s.id);
+            try {
+                await setDoc(stationsDocRef, { order: newOrder }, { merge: true });
+                window.showToast('تم حفظ الترتيب بنجاح', 'success');
+            } catch(err) {
+                console.error(err);
+                window.showToast('حدث خطأ أثناء حفظ الترتيب', 'error');
+            }
+            draggedIndex = -1;
+        }
+
+        document.addEventListener('dragend', (e) => {
+            if (e.target.classList) {
+                e.target.classList.remove('opacity-50', 'scale-95');
+            }
+            draggedIndex = -1;
+        });
+
+        // محاكي الذبذبات الوهمي
         const canvas = document.getElementById('visualizer');
         const ctx = canvas.getContext('2d');
         
         function drawVisualizer() {
             requestAnimationFrame(drawVisualizer);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const barWidth = 6;
-            const barSpacing = 3;
+            const barWidth = 6, barSpacing = 3;
             const numBars = canvas.width / (barWidth + barSpacing);
             
             for (let i = 0; i < numBars; i++) {
-                let barHeight = 2; // الارتفاع الافتراضي
-                
+                let barHeight = 2; 
                 if (isPlaying) {
                     barHeight = Math.random() * (canvas.height - 10) + 10;
                     const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-                    gradient.addColorStop(0, '#d4af37'); 
-                    gradient.addColorStop(0.5, '#f59e0b'); 
-                    gradient.addColorStop(1, '#ef4444'); 
+                    gradient.addColorStop(0, '#d4af37'); gradient.addColorStop(0.5, '#f59e0b'); gradient.addColorStop(1, '#ef4444'); 
                     ctx.fillStyle = gradient;
                 } else {
                     ctx.fillStyle = '#4a3018'; 
                 }
-                
                 ctx.fillRect(i * (barWidth + barSpacing), canvas.height - barHeight, barWidth, barHeight);
             }
         }
