@@ -39,44 +39,50 @@
             box-shadow: inset 0 8px 25px rgba(0,0,0,1), inset 0 0 15px rgba(255, 160, 0, 0.15);
             border: 3px solid #080402; border-radius: 8px; position: relative;
         }
-        .vintage-btn {
-            background: linear-gradient(to bottom, #f3e5ab, #d4af37, #996515);
-            border: 2px solid #2b1810;
-            box-shadow: inset 0 2px 5px rgba(255,255,255,0.8), 0 4px 0 #4a3018, 0 8px 15px rgba(0,0,0,0.8);
-            color: #1a0f0a !important; text-shadow: 0 1px 0 rgba(255,255,255,0.5);
-            transition: all 0.15s; font-weight: 900; border-radius: 6px;
-        }
-        .vintage-btn:active {
-            transform: translateY(4px);
-            box-shadow: inset 0 2px 5px rgba(255,255,255,0.6), 0 0 0 #4a3018;
-        }
         
         body {
             background-color: #0d0704;
             background-image: radial-gradient(circle at 50% 30%, #3e2415 0%, #0a0502 80%);
             font-family: 'Georgia', serif;
         }
+
+        /* تنسيق النافذة المنبثقة (Modal) */
+        .modal-overlay {
+            backdrop-filter: blur(5px);
+        }
     </style>
 </head>
 <body class="min-h-screen text-amber-50 selection:bg-amber-900/50 flex flex-col p-4 sm:p-8">
+
+    <!-- نافذة لوحة التحكم المخفية -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center modal-overlay p-4 opacity-0 transition-opacity duration-300">
+        <div id="admin-modal-content" class="bg-[#1a0f0a] border-2 border-[#d4af37] p-6 rounded-2xl w-full max-w-md shadow-[0_0_40px_rgba(212,175,55,0.2)] relative transform scale-95 transition-transform duration-300">
+            <!-- سيتم حقن محتوى النافذة هنا عبر الجافاسكريبت -->
+        </div>
+    </div>
 
     <!-- حاوية الإشعارات -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <div class="max-w-5xl mx-auto w-full space-y-8 mt-4 sm:mt-0">
 
-        <!-- الترويسة -->
-        <header class="flex flex-col sm:flex-row items-center justify-between pb-6 border-b border-gray-800 gap-4">
-            <div class="flex items-center gap-4 glass-hollow px-6 py-4 rounded-2xl w-full sm:w-auto">
-                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.4)] border-2 border-[#2c1810]">
+        <!-- الترويسة (الضغط هنا 5 مرات يفتح لوحة التحكم) -->
+        <header id="main-header" class="flex flex-col sm:flex-row items-center justify-between pb-6 border-b border-gray-800 gap-4 cursor-pointer select-none" title="انقر 5 مرات لفتح الإعدادات">
+            <div class="flex items-center gap-4 glass-hollow px-6 py-4 rounded-2xl w-full sm:w-auto hover:bg-[#1f140e] transition-colors">
+                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.4)] border-2 border-[#2c1810] pointer-events-none">
                     <i data-lucide="radio" class="w-7 h-7 text-[#2c1810]"></i>
                 </div>
-                <div>
+                <div class="pointer-events-none">
                     <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#996515] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                         باقة الإذاعات المصرية
                     </h1>
                     <p class="text-sm text-amber-200/70 mt-1">رحلة عبر الأثير مع إذاعات الزمن الجميل</p>
                 </div>
+            </div>
+            
+            <!-- مؤشر حالة قاعدة البيانات -->
+            <div id="db-status" class="hidden sm:flex items-center gap-2 text-xs font-mono bg-[#111] border border-[#333] px-3 py-1.5 rounded-lg text-emerald-400">
+                <i data-lucide="database" class="w-4 h-4"></i> متصل بالسحابة
             </div>
         </header>
 
@@ -84,23 +90,23 @@
             
             <!-- القسم الأيمن: المشغل -->
             <div class="lg:col-span-5 space-y-6">
-                <div class="wood-panel rounded-3xl p-6 shadow-2xl relative">
+                <div class="wood-panel rounded-3xl p-6 shadow-2xl relative flex flex-col items-center justify-center min-h-[450px]">
                     
                     <div id="playing-glow" class="hidden">
                         <div class="absolute top-0 right-0 w-48 h-48 bg-amber-500/20 blur-[60px] rounded-full pointer-events-none"></div>
                         <div class="absolute bottom-0 left-0 w-48 h-48 bg-orange-600/20 blur-[60px] rounded-full pointer-events-none"></div>
                     </div>
 
-                    <div class="relative z-10 flex flex-col items-center text-center space-y-6">
+                    <div class="relative z-10 flex flex-col items-center text-center space-y-8 w-full">
                         
                         <!-- محاكي ذبذبات الصوت -->
                         <canvas id="visualizer" class="w-full h-16 mb-2 opacity-50 transition-opacity duration-500" width="400" height="60"></canvas>
 
                         <!-- شاشة المشغل المدمجة -->
-                        <div id="screen-container" class="w-64 h-40 sm:w-72 sm:h-44 rounded-2xl border-4 border-gray-800 flex items-center justify-center bg-black transition-all duration-500 overflow-hidden shadow-xl relative group z-20">
-                            
-                            <!-- إطار ديليموشن المباشر (تم تحديث الخصائص لإزالة تحذيرات المتصفح) -->
-                            <iframe id="dm-iframe" class="w-full h-full absolute inset-0 z-10 hidden" frameborder="0" allow="autoplay; fullscreen"></iframe>
+                        <div id="screen-container" class="w-full max-w-[280px] aspect-video rounded-2xl border-4 border-gray-800 flex items-center justify-center bg-black transition-all duration-500 overflow-hidden shadow-xl relative group z-20 mx-auto">
+
+                            <!-- إطار ديليموشن المباشر (Iframe) -->
+                            <iframe id="dm-iframe" class="w-full h-full absolute inset-0 z-10 hidden" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation" allowfullscreen></iframe>
                             
                             <!-- أيقونة تظهر قبل تحديد الإذاعة -->
                             <div id="default-icon-container" class="absolute inset-0 z-0 flex items-center justify-center bg-[#111]">
@@ -109,33 +115,15 @@
                         </div>
 
                         <!-- معلومات المقطع -->
-                        <div class="w-full glass-hollow p-5 rounded-xl">
+                        <div class="w-full glass-hollow p-5 rounded-xl mt-4">
                             <span id="status-badge" class="inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-red-900/40 text-red-400 border border-red-700/50">متوقف</span>
                             <h2 id="track-title" class="text-xl font-bold text-amber-400 text-shadow mb-2" style="font-family: 'Courier New', monospace;">
                                 اختر إذاعة للبدء
                             </h2>
                             <div class="flex items-center justify-center gap-2 text-sm text-amber-200/50">
                                 <i data-lucide="radio-receiver" class="w-4 h-4"></i>
-                                <span>البث المباشر</span>
+                                <span>التحكم متاح داخل الشاشة</span>
                             </div>
-                        </div>
-
-                        <!-- التحكم بمستوى الصوت الخارجي -->
-                        <div class="w-full px-4" dir="ltr">
-                            <div class="flex items-center gap-3 glass-hollow p-3 rounded-xl">
-                                <button id="btn-mute" class="text-amber-500 hover:text-amber-300">
-                                    <i id="volume-icon" data-lucide="volume-2" class="w-5 h-5"></i>
-                                </button>
-                                <input type="range" id="volume-slider" min="0" max="100" value="100" class="flex-1 h-1.5 bg-[#1a0f0a] border border-[#3e2723] rounded-lg appearance-none cursor-pointer custom-range" />
-                            </div>
-                        </div>
-
-                        <!-- أزرار التشغيل الأساسية للتصميم -->
-                        <div class="flex items-center justify-center gap-6 w-full pt-2">
-                            <button id="btn-play-pause" class="w-16 h-16 rounded-full vintage-btn flex items-center justify-center transition-all opacity-50 pointer-events-none shadow-lg">
-                                <svg id="icon-play" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                <svg id="icon-pause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                            </button>
                         </div>
 
                     </div>
@@ -149,11 +137,13 @@
                         <h3 class="font-bold text-gray-100 flex items-center gap-3 text-xl">
                             <i data-lucide="list-music" class="w-6 h-6 text-amber-400"></i> القائمة الإذاعية
                         </h3>
-                        <span class="bg-[#111] px-3 py-1 rounded-lg text-amber-500 font-mono text-sm border border-[#333]">8 إذاعات</span>
+                        <span id="stations-count" class="bg-[#111] px-3 py-1 rounded-lg text-amber-500 font-mono text-sm border border-[#333]">8 إذاعات</span>
                     </div>
 
                     <div id="playlist-container" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3 relative z-10 bg-[#111]/80">
-                        <!-- سيتم توليد المحطات هنا عبر الجافاسكربت -->
+                        <div class="flex justify-center items-center h-full">
+                            <i data-lucide="loader-2" class="w-8 h-8 text-amber-500 animate-spin"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -161,64 +151,148 @@
         </div>
     </div>
 
-    <script>
+    <!-- استخدام النوع module لتشغيل استيرادات Firebase -->
+    <script type="module">
+        // استيراد Firebase من السيرفرات الرسمية لجوجل
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         // تهيئة أيقونات Lucide
         lucide.createIcons();
 
-        // بيانات الإذاعات والروابط
-        const stations = [
-            { id: 'x8n6dt3', title: 'إذاعة البرنامج العام', color: 'from-blue-900 to-blue-700' },
-            { id: 'x8n6dqq', title: 'إذاعة صوت العرب', color: 'from-orange-900 to-orange-700' },
-            { id: 'x8n6drt', title: 'إذاعة الشرق الأوسط', color: 'from-purple-900 to-purple-700' },
-            { id: 'x8n6dzo', title: 'إذاعة الشباب والرياضة', color: 'from-green-900 to-green-700' },
-            { id: 'x8n6dyz', title: 'إذاعة الأغاني', color: 'from-pink-900 to-pink-700' },
-            { id: 'x8n6eci', title: 'إذاعة البرنامج الثقافي', color: 'from-teal-900 to-teal-700' },
-            { id: 'x8n6ebs', title: 'إذاعة القاهرة الكبرى', color: 'from-indigo-900 to-indigo-700' },
-            { id: 'x9p4ebk', title: 'إذاعة الوادي الجديد', color: 'from-amber-900 to-amber-700' },
+        // إعدادات Firebase الخاصة بك
+        const firebaseConfig = {
+            apiKey: "AIzaSyDdXHeyt16G5hpAsXbiBOmfPSGmEUaRCco",
+            authDomain: "youkids-project.firebaseapp.com",
+            projectId: "youkids-project",
+            storageBucket: "youkids-project.firebasestorage.app",
+            messagingSenderId: "819621380321",
+            appId: "1:819621380321:web:4e2d9958bf0f7dd4d577a0",
+            measurementId: "G-7FPCRV0L55"
+        };
+
+        // تهيئة التطبيق وقاعدة البيانات والمصادقة
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // تعريف معرف التطبيق
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'egypt_radio_app';
+        
+        // مسار الحفظ متوافق مع قواعدك تماماً ولن يؤثر على الموقع الآخر
+        // المسار هو: /artifacts/{appId}/public/data/videos/radio_custom_stations
+        const stationsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'videos', 'radio_custom_stations');
+
+        // تسجيل الدخول الصامت مع تخطي خطأ التعارض في التوكن (custom-token-mismatch)
+        let user = null;
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (tokenError) {
+                        console.warn("الرقم السري الخاص بالبيئة غير متطابق مع قاعدة بياناتك، جاري الدخول كمجهول...");
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth init error:", error);
+            }
+        };
+        initAuth();
+
+        // نظام الإشعارات الذكي
+        window.showToast = function(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) return;
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : (type === 'success' ? 'bg-emerald-600' : 'bg-cyan-600');
+            const icon = type === 'error' ? 'alert-triangle' : (type === 'success' ? 'check-circle' : 'info');
+            
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white ${bgColor} transition-all duration-300 transform translate-y-0 opacity-100`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span class="font-medium text-sm leading-relaxed">${message}</span>`;
+            
+            toastContainer.appendChild(toast);
+            lucide.createIcons({ root: toast });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // الإذاعات الافتراضية الثابتة
+        const defaultStations = [
+            { id: 'x8n6dt3', title: 'إذاعة البرنامج العام', color: 'from-blue-900 to-blue-700', isCustom: false },
+            { id: 'x8n6dqq', title: 'إذاعة صوت العرب', color: 'from-orange-900 to-orange-700', isCustom: false },
+            { id: 'x8n6drt', title: 'إذاعة الشرق الأوسط', color: 'from-purple-900 to-purple-700', isCustom: false },
+            { id: 'x8n6dzo', title: 'إذاعة الشباب والرياضة', color: 'from-green-900 to-green-700', isCustom: false },
+            { id: 'x8n6dyz', title: 'إذاعة الأغاني', color: 'from-pink-900 to-pink-700', isCustom: false },
+            { id: 'x8n6eci', title: 'إذاعة البرنامج الثقافي', color: 'from-teal-900 to-teal-700', isCustom: false },
+            { id: 'x8n6ebs', title: 'إذاعة القاهرة الكبرى', color: 'from-indigo-900 to-indigo-700', isCustom: false },
+            { id: 'x9p4ebk', title: 'إذاعة الوادي الجديد', color: 'from-amber-900 to-amber-700', isCustom: false },
         ];
 
-        // المتغيرات العامة
+        // المتغيرات
+        let customStations = [];
+        let stations = [...defaultStations];
         let currentStationIndex = -1;
         let isPlaying = false;
-        let volume = 100;
-        let isMuted = false;
+        let isAdmin = false; 
         
         // عناصر واجهة المستخدم
         const dmIframe = document.getElementById('dm-iframe');
-        const btnPlayPause = document.getElementById('btn-play-pause');
-        const iconPlay = document.getElementById('icon-play');
-        const iconPause = document.getElementById('icon-pause');
         const trackTitle = document.getElementById('track-title');
         const screenContainer = document.getElementById('screen-container');
         const defaultIconContainer = document.getElementById('default-icon-container');
         const statusBadge = document.getElementById('status-badge');
         const playingGlow = document.getElementById('playing-glow');
         const playlistContainer = document.getElementById('playlist-container');
-        const volumeSlider = document.getElementById('volume-slider');
-        const btnMute = document.getElementById('btn-mute');
-        const volumeIcon = document.getElementById('volume-icon');
+        const adminModal = document.getElementById('admin-modal');
+        const adminModalContent = document.getElementById('admin-modal-content');
 
-        // دالة موثوقة لإرسال الأوامر لديليموشن بجميع الصيغ التي يدعمها المشغل القديم والحديث
-        function sendDMCommand(command, param) {
-            if (!dmIframe.contentWindow) return;
-            
-            // 1. الصيغة الكلاسيكية: إرسال كنص مباشر مدعوم بـ api=postMessage
-            let msg = command;
-            if (param !== undefined) {
-                msg += '=' + param;
+        // تحديث عدد الإذاعات
+        function updateStationsCount() {
+            const stationsCount = document.getElementById('stations-count');
+            if (stationsCount) {
+                stationsCount.innerText = `${stations.length} إذاعة`;
             }
-            dmIframe.contentWindow.postMessage(msg, '*');
-            
-            // 2. الصيغة الحديثة للمشغلات الجديدة (Geo Player): إرسال كـ JSON
-            try {
-                const jsonObj = { command: command };
-                if (param !== undefined) jsonObj.parameters = [param];
-                dmIframe.contentWindow.postMessage(JSON.stringify(jsonObj), '*');
-            } catch(e) {}
         }
+
+        // الاستماع لقاعدة البيانات بشكل فوري (فقط بعد التأكد من تسجيل الدخول)
+        onAuthStateChanged(auth, (currentUser) => {
+            user = currentUser;
+            if (user) {
+                onSnapshot(stationsDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        customStations = docSnap.data().stations || [];
+                    } else {
+                        customStations = [];
+                    }
+                    stations = [...defaultStations, ...customStations];
+                    window.renderPlaylist();
+                    
+                    document.getElementById('db-status').innerHTML = `<i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> متصل بالسحابة`;
+                    lucide.createIcons({ root: document.getElementById('db-status') });
+                }, (error) => {
+                    console.error("خطأ في جلب بيانات الإذاعات:", error);
+                    window.showToast("خطأ في الاتصال بقاعدة البيانات. راجع الصلاحيات.", "error");
+                    document.getElementById('db-status').innerHTML = `<i data-lucide="database" class="w-4 h-4 text-red-500"></i> غير متصل`;
+                    lucide.createIcons({ root: document.getElementById('db-status') });
+                });
+            } else {
+                // في حال لم يتمكن من تسجيل الدخول يتم عرض المحطات الافتراضية فقط
+                stations = [...defaultStations];
+                window.renderPlaylist();
+            }
+        });
 
         // رسم القائمة
         window.renderPlaylist = function() {
+            updateStationsCount();
             playlistContainer.innerHTML = stations.map((station, index) => {
                 const isActive = index === currentStationIndex;
                 const activeClass = isActive ? 'border-amber-500 bg-[#2b1810]' : 'border-[#333] bg-[#1a1a1a] hover:bg-[#222]';
@@ -231,6 +305,11 @@
                        </div>`
                     : `<i data-lucide="${isActive ? 'pause-circle' : 'play-circle'}" class="w-6 h-6 ${isActive ? 'text-amber-400' : 'text-gray-500'}"></i>`;
 
+                // زر الحذف
+                const deleteBtn = (isAdmin && station.isCustom) 
+                    ? `<button onclick="window.deleteCustomStation(event, ${index})" class="p-2 bg-red-900/50 hover:bg-red-600 text-red-300 hover:text-white rounded-lg transition-colors ml-2" title="حذف الإذاعة"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
+                    : '';
+
                 return `
                     <div onclick="window.selectStation(${index})" class="flex items-center gap-4 p-4 rounded-xl border ${activeClass} cursor-pointer transition-all shadow-md group">
                         <div class="w-12 h-12 rounded-lg bg-gradient-to-br ${station.color} flex items-center justify-center shadow-inner shrink-0 group-hover:scale-105 transition-transform border border-black/50">
@@ -238,8 +317,9 @@
                         </div>
                         <div class="flex-1 min-w-0 text-right">
                             <h4 class="text-lg font-bold ${textClass} truncate">${station.title}</h4>
-                            <p class="text-xs text-gray-400 truncate mt-1">بث مباشر - الهيئة الوطنية للإعلام</p>
+                            <p class="text-xs text-gray-400 truncate mt-1">${station.isCustom ? 'إذاعة مضافة' : 'بث مباشر - الهيئة الوطنية للإعلام'}</p>
                         </div>
+                        ${deleteBtn}
                         <div class="shrink-0 flex items-center justify-center w-10">
                             ${iconOrEq}
                         </div>
@@ -256,55 +336,42 @@
             
             // تحديث واجهة المستخدم
             trackTitle.innerText = station.title;
-            btnPlayPause.classList.remove('opacity-50', 'pointer-events-none');
             defaultIconContainer.classList.add('hidden');
             dmIframe.classList.remove('hidden');
             
             statusBadge.innerText = 'جاري الاتصال...';
             statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-yellow-900/40 text-yellow-400 border border-yellow-700/50';
 
-            // دمج المشغل مباشرة.
-            // muteParam يُحدد إذا كان الصوت سيبدأ مكتوماً أم لا بناءً على اختيار المستخدم من الشريط.
-            const muteParam = isMuted ? '1' : '0';
+            let originParam = window.location.origin !== 'file://' && window.location.origin !== 'null' ? `&origin=${encodeURIComponent(window.location.origin)}` : '&origin=http://localhost';
             
-            // قمنا بإضافة api=postMessage لتمكين استقبال الأوامر 
-            dmIframe.src = `https://www.dailymotion.com/embed/video/${station.id}?api=postMessage&autoplay=1&mute=${muteParam}&controls=1&ui-logo=0`;
+            dmIframe.src = `https://www.dailymotion.com/embed/video/${station.id}?api=1${originParam}&autoplay=1&mute=0&controls=1&ui-logo=0&sharing-enable=0&ui-start-screen-info=0`;
 
             isPlaying = false;
             updatePlayerUI();
             window.renderPlaylist();
         }
 
-        // الاستماع لأحداث المشغل من الـ Iframe لتحديث الواجهة
+        // الاستماع لأحداث المشغل
         window.addEventListener('message', (event) => {
             if (!event.origin.includes('dailymotion.com')) return;
 
             let eventName = '';
-            
-            // معالجة الرسائل الواردة من مشغل ديليموشن بأي صيغة (Query String أو JSON)
             try {
                 if (typeof event.data === 'string') {
-                    if (event.data.includes('event=')) {
-                        const params = new URLSearchParams(event.data);
-                        eventName = params.get('event');
-                    } else if (event.data.startsWith('{')) {
-                        const parsed = JSON.parse(event.data);
-                        eventName = parsed.event || parsed.type;
-                    }
-                } else if (event.data && typeof event.data === 'object') {
-                    eventName = event.data.event || event.data.type;
+                    const params = new URLSearchParams(event.data);
+                    eventName = params.get('event');
                 }
             } catch(e) {}
 
             if (!eventName) return;
 
-            if (eventName === 'play' || eventName === 'playing' || eventName === 'video_start') {
+            if (eventName === 'play' || eventName === 'playing') {
                 isPlaying = true;
                 updatePlayerUI();
                 statusBadge.innerText = 'بث مباشر 🔴';
                 statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-red-900/40 text-red-400 border border-red-700/50';
             } 
-            else if (eventName === 'pause' || eventName === 'video_end') {
+            else if (eventName === 'pause') {
                 isPlaying = false;
                 updatePlayerUI();
                 statusBadge.innerText = 'متوقف';
@@ -314,14 +381,10 @@
 
         function updatePlayerUI() {
             if (isPlaying) {
-                iconPlay.classList.add('hidden');
-                iconPause.classList.remove('hidden');
                 screenContainer.classList.add('border-amber-500', 'shadow-[0_0_30px_rgba(245,158,11,0.5)]');
                 screenContainer.classList.remove('border-gray-800');
                 playingGlow.classList.remove('hidden');
             } else {
-                iconPlay.classList.remove('hidden');
-                iconPause.classList.add('hidden');
                 screenContainer.classList.remove('border-amber-500', 'shadow-[0_0_30px_rgba(245,158,11,0.5)]');
                 screenContainer.classList.add('border-gray-800');
                 playingGlow.classList.add('hidden');
@@ -329,39 +392,197 @@
             window.renderPlaylist();
         }
 
-        // --- ربط الأزرار الخارجية بـ Iframe ---
-
-        btnPlayPause.addEventListener('click', () => {
-            if (currentStationIndex === -1) return;
-            sendDMCommand(isPlaying ? 'pause' : 'play');
-        });
-
-        volumeSlider.addEventListener('input', (e) => {
-            volume = parseInt(e.target.value);
-            isMuted = volume === 0;
-            updateVolumeIcon();
+        // ==========================================
+        // نظام لوحة التحكم والفايربيس
+        // ==========================================
+        
+        let headerClickCount = 0;
+        let headerClickTimer;
+        
+        const header = document.getElementById('main-header');
+        header.addEventListener('click', () => {
+            headerClickCount++;
+            clearTimeout(headerClickTimer);
             
-            // إرسال قيم الصوت (من 0.0 إلى 1.0)
-            sendDMCommand('volume', volume / 100);
-            sendDMCommand('muted', isMuted ? 'true' : 'false');
+            if (headerClickCount >= 5) {
+                headerClickCount = 0;
+                window.openAdminModal();
+            } else {
+                headerClickTimer = setTimeout(() => { headerClickCount = 0; }, 1500);
+            }
         });
 
-        btnMute.addEventListener('click', () => {
-            isMuted = !isMuted;
-            if (!isMuted && volume === 0) volume = 50; 
-            volumeSlider.value = isMuted ? 0 : volume;
-            updateVolumeIcon();
+        window.openAdminModal = function() {
+            adminModal.classList.remove('hidden');
+            adminModal.classList.add('flex');
+            setTimeout(() => {
+                adminModal.classList.remove('opacity-0');
+                adminModalContent.classList.remove('scale-95');
+            }, 10);
+
+            if (!isAdmin) {
+                renderLoginUI();
+            } else {
+                renderDashboardUI();
+            }
+        }
+
+        window.closeAdminModal = function() {
+            adminModal.classList.add('opacity-0');
+            adminModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                adminModal.classList.add('hidden');
+                adminModal.classList.remove('flex');
+            }, 300);
+        }
+
+        function renderLoginUI() {
+            adminModalContent.innerHTML = `
+                <div class="flex items-center justify-between mb-6 border-b border-[#333] pb-4">
+                    <h3 class="text-xl font-bold text-[#d4af37] flex items-center gap-2">
+                        <i data-lucide="lock" class="w-6 h-6"></i> لوحة التحكم
+                    </h3>
+                    <button onclick="window.closeAdminModal()" class="text-gray-500 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">أدخل كلمة المرور:</label>
+                        <input type="password" id="admin-password" class="w-full bg-[#0a0502] border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] outline-none text-center tracking-widest" placeholder="••••">
+                    </div>
+                    <button onclick="window.checkPassword()" class="w-full py-3 bg-gradient-to-r from-[#d4af37] to-[#996515] text-black font-bold rounded-xl hover:opacity-90 transition-opacity">دخول</button>
+                </div>
+            `;
+            lucide.createIcons({ root: adminModalContent });
+            document.getElementById('admin-password').focus();
             
-            sendDMCommand('muted', isMuted ? 'true' : 'false');
-            if (!isMuted) sendDMCommand('volume', volume / 100);
-        });
+            document.getElementById('admin-password').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') window.checkPassword();
+            });
+        }
 
-        function updateVolumeIcon() {
-            let icon = 'volume-2';
-            if (isMuted || volume == 0) icon = 'volume-x';
-            else if (volume < 50) icon = 'volume-1';
-            volumeIcon.setAttribute('data-lucide', icon);
-            lucide.createIcons({ root: btnMute });
+        window.checkPassword = function() {
+            const pass = document.getElementById('admin-password').value;
+            if (pass === '2112') {
+                isAdmin = true;
+                window.showToast('تم تسجيل الدخول بنجاح', 'success');
+                renderDashboardUI();
+                window.renderPlaylist(); 
+            } else {
+                window.showToast('كلمة المرور خاطئة!', 'error');
+            }
+        }
+
+        function renderDashboardUI() {
+            adminModalContent.innerHTML = `
+                <div class="flex items-center justify-between mb-6 border-b border-[#333] pb-4">
+                    <h3 class="text-xl font-bold text-[#d4af37] flex items-center gap-2">
+                        <i data-lucide="settings" class="w-6 h-6"></i> إدارة الإذاعات
+                    </h3>
+                    <button onclick="window.closeAdminModal()" class="text-gray-500 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">اسم الإذاعة:</label>
+                        <input type="text" id="new-station-name" class="w-full bg-[#0a0502] border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] outline-none" placeholder="مثال: إذاعة القرآن الكريم">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">رابط ديليموشن (أو المعرف ID):</label>
+                        <input type="text" id="new-station-url" class="w-full bg-[#0a0502] border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] outline-none text-left" dir="ltr" placeholder="https://dailymotion.com/video/x8n6dt3">
+                    </div>
+                    <button onclick="window.addNewStation()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex justify-center items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i> حفظ الإذاعة في السحابة
+                    </button>
+                </div>
+            `;
+            lucide.createIcons({ root: adminModalContent });
+        }
+
+        function extractDMId(url) {
+            let match = url.match(/video\/([a-zA-Z0-9]+)/);
+            if (match) return match[1];
+            match = url.match(/video=([a-zA-Z0-9]+)/);
+            if (match) return match[1];
+            return url.trim(); 
+        }
+
+        window.addNewStation = async function() {
+            if (!user) {
+                window.showToast('جاري الاتصال بالسحابة للمصادقة، يرجى الانتظار...', 'info');
+                return;
+            }
+
+            const nameInput = document.getElementById('new-station-name').value.trim();
+            const urlInput = document.getElementById('new-station-url').value.trim();
+
+            if (!nameInput || !urlInput) {
+                window.showToast('يرجى تعبئة جميع الحقول', 'error');
+                return;
+            }
+
+            const videoId = extractDMId(urlInput);
+            
+            const colors = [
+                'from-red-900 to-red-700', 'from-blue-900 to-blue-700', 
+                'from-emerald-900 to-emerald-700', 'from-fuchsia-900 to-fuchsia-700',
+                'from-rose-900 to-rose-700', 'from-cyan-900 to-cyan-700'
+            ];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+            const newStation = {
+                id: videoId,
+                title: nameInput,
+                color: randomColor,
+                isCustom: true
+            };
+
+            const updatedCustomStations = [...customStations, newStation];
+            
+            try {
+                // الحفظ في قاعدة البيانات السحابية (فايربيس)
+                await setDoc(stationsDocRef, { stations: updatedCustomStations }, { merge: true });
+                window.showToast('تمت إضافة الإذاعة وحفظها بنجاح!', 'success');
+                
+                document.getElementById('new-station-name').value = '';
+                document.getElementById('new-station-url').value = '';
+            } catch (e) {
+                console.error("Error saving to Firebase:", e);
+                window.showToast('حدث خطأ أثناء الحفظ. تأكد من إعدادات قاعدة البيانات.', 'error');
+            }
+        }
+
+        window.deleteCustomStation = async function(event, index) {
+            event.stopPropagation();
+            if (!user) return;
+            if(!confirm('هل أنت متأكد من حذف هذه الإذاعة من السحابة لجميع المستخدمين؟')) return;
+
+            const customIndex = index - defaultStations.length;
+            
+            if (customIndex >= 0) {
+                const updatedCustomStations = [...customStations];
+                updatedCustomStations.splice(customIndex, 1);
+                
+                try {
+                    // الحذف من قاعدة البيانات السحابية
+                    await setDoc(stationsDocRef, { stations: updatedCustomStations }, { merge: true });
+                    
+                    if (currentStationIndex === index) {
+                        dmIframe.src = '';
+                        dmIframe.classList.add('hidden');
+                        defaultIconContainer.classList.remove('hidden');
+                        trackTitle.innerText = 'اختر إذاعة للبدء';
+                        statusBadge.innerText = 'متوقف';
+                        statusBadge.className = 'inline-block mb-2 px-2 py-0.5 rounded text-[10px] bg-gray-900/40 text-gray-400 border border-gray-700/50';
+                        currentStationIndex = -1;
+                        isPlaying = false;
+                        updatePlayerUI();
+                    }
+                    
+                    window.showToast('تم الحذف بنجاح', 'info');
+                } catch(e) {
+                    console.error("Error deleting from Firebase:", e);
+                    window.showToast('حدث خطأ أثناء الحذف.', 'error');
+                }
+            }
         }
 
         // محاكي الذبذبات الوهمي (Visualizer)
@@ -394,8 +615,6 @@
             }
         }
 
-        // بدء البرنامج
-        window.renderPlaylist();
         drawVisualizer();
 
     </script>
